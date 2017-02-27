@@ -1,0 +1,22 @@
+Options -Indexes
+# BEGIN ROUTING
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /.*index\.php
+    RewriteRule ^index.php/?(.*)$ $1 [R=301,L]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php/$1?%{QUERY_STRING} [L]
+</IfModule>
+# END ROUTING
+
+<Files *.*>
+    Order Deny,Allow
+    Deny from all
+</Files>
+
+<Files index.php>
+    Order Allow,Deny
+   Allow from all
+</Files>

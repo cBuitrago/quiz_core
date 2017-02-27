@@ -1,0 +1,42 @@
+{
+    "name": "novaconcept/concession-api-core",
+    "description": "Description of project concession-api-core.",
+    "authors":
+    [
+        {
+            "name": "Massimo Canonico",
+            "email": "mcanonico@novaconcept.com"
+        },
+        {
+            "name": "Carlos Buitrago",
+            "email": "cbuitrago@novaconcept.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "repositories":
+    [
+        {
+          "type": "git",
+          "url": "git@github.com:NOVACONCEPT/concession-api-common.git"
+        }
+    ],
+    "require":
+    {
+        "novaconcept/concession-api-common": "v1.1.5"
+    },
+    "autoload":
+    {
+        "psr-4":
+        {
+            "com\\novaconcept\\entity\\": "com/novaconcept/entity/",
+            "com\\novaconcept\\proxy\\": "com/novaconcept/proxy/",
+            "com\\novaconcept\\service\\": "com/novaconcept/service/",
+            "com\\novaconcept\\utility\\": "com/novaconcept/utility/",
+            "phpUnit\\phpUnitTest\\service\\": "phpUnit/phpUnitTest/service/",
+            "phpUnit\\phpUnitTest\\utility\\": "phpUnit/phpUnitTest/utility/"
+        }
+    },
+    "require-dev": {
+        
+    }
+}
