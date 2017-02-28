@@ -107,12 +107,12 @@ class ReportService extends AbstractCoreService {
                         $quizResults = $quizResult->getData();
                         $quizResults[] = $quizResult->getQuizID()->getQuizID();
                         $quizResults[] = $quizResult->getUserID()->getUserName();
-                        $quizResults[] = $departmentInfo->getParent()->getParent()->getId();
-                        $quizResults[] = $departmentInfo->getParent()->getParent()->getName();
-                        $quizResults[] = $departmentInfo->getParent()->getId();
-                        $quizResults[] = $departmentInfo->getParent()->getName();
-                        $quizResults[] = $departmentInfo->getId();
-                        $quizResults[] = $departmentInfo->getName();
+                        $quizResults[] = $agencyDepartment->getParent()->getParent()->getId();
+                        $quizResults[] = $agencyDepartment->getParent()->getParent()->getName();
+                        $quizResults[] = $agencyDepartment->getParent()->getId();
+                        $quizResults[] = $agencyDepartment->getParent()->getName();
+                        $quizResults[] = $agencyDepartment->getId();
+                        $quizResults[] = $agencyDepartment->getName();
                         $quizResults[] = $quizResult->getProgressId()->getFra();
                         $this->data[0][] = $quizResults;
                     }

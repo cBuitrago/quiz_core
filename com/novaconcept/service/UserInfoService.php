@@ -31,7 +31,9 @@ class UserInfoService extends AbstractCoreService {
                     ->build();
             return;
         }
-
+        
+        $this->request->getPostData()->username = trim($this->request->getPostData()->username);
+        $this->request->getPostData()->password = trim($this->request->getPostData()->password);
         $accountInfo = $this->bootstrap->getEntityManager()
                 ->find('com\novaconcept\entity\AccountInfo', $accountId);
         $result = $this->bootstrap->getEntityManager()
