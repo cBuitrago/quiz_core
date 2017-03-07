@@ -70,14 +70,14 @@ class QuizResults extends AbstractEntity
     /**
      * @var string
      *
-     * @ORM\Column(name="ANSWERS", type="string", nullable=false)
+     * @ORM\Column(name="ANSWERS", type="string", nullable=true)
      */
     private $answers;
     
     /**
      * @var string
      *
-     * @ORM\Column(name="QUIZ_SCORE", type="string", nullable=false)
+     * @ORM\Column(name="QUIZ_SCORE", type="string", nullable=true)
      */
     private $quizScore;
     

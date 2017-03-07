@@ -91,7 +91,7 @@ class Quiz extends AbstractEntity
     
     /** 
      * @var ArrayCollection
-     * @ORM\OneToMany(targetEntity="QuizAuthorization", mappedBy="Quiz", cascade={"all"}) 
+     * @ORM\OneToMany(targetEntity="QuizAuthorization", mappedBy="quiz", cascade={"all"}) 
      */
     private $quizAuthorizationCollection;
     
@@ -157,32 +157,48 @@ class Quiz extends AbstractEntity
     
     public function mergePostData($requestData)
     {
-        if ( isset($requestData->quizId) )
-            $this->setQuizID($requestData->quizId);
+        if ( isset($requestData->QUIZ_ID) )
+            $this->setQuizID($requestData->QUIZ_ID);
         
-        if ( isset($requestData->lockedOnCompletion) )
-            $this->setLockedOnCompletion($requestData->lockedOnCompletion);
+        if ( isset($requestData->LOCKED_ON_COMPLETION) ){
+            $this->setLockedOnCompletion($requestData->LOCKED_ON_COMPLETION);
+        }else{
+            $this->setLockedOnCompletion(FALSE);
+        }
         
-        if ( isset($requestData->timeToComplete) )
-            $this->setTimeToComplete($requestData->timeToComplete);
+        if ( isset($requestData->TIME_TO_COMPLETE) )
+            $this->setTimeToComplete($requestData->TIME_TO_COMPLETE);
         
-        if ( isset($requestData->quizData) )
-            $this->setQuizData($requestData->quizData);
-                
-        if ( isset($requestData->isUserCanDisplayChart) )
-            $this->setIsUserCanDisplayChart($requestData->isUserCanDisplayChart);
+        if ( isset($requestData->QUIZ_DATA) )
+            $this->setQuizData($requestData->QUIZ_DATA);
         
-        if ( isset($requestData->isUserCanDisplayQa) )
-            $this->setIsUserCanDisplayQa($requestData->isUserCanDisplayQa);
+        if ( isset($requestData->IS_USER_CAN_DISPLAY_CHART) ){
+            $this->setIsUserCanDisplayChart($requestData->IS_USER_CAN_DISPLAY_CHART);
+        }else{
+            $this->setIsUserCanDisplayChart(FALSE);
+        }
         
-        if ( isset($requestData->isEnabled) )
-            $this->setIsEnabled($requestData->isEnabled);
+        if ( isset($requestData->IS_USER_CAN_DISPLAY_QA) ){
+            $this->setIsUserCanDisplayQa($requestData->IS_USER_CAN_DISPLAY_QA);
+        }else{
+            $this->setIsUserCanDisplayQa(FALSE);
+        }
         
-        if ( isset($requestData->isUserSeeGoodAnswer) )
-            $this->setIsUserSeeGoodAnswer($requestData->isUserSeeGoodAnswer);
+        if ( isset($requestData->IS_ENABLED) ){
+            $this->setIsEnabled($requestData->IS_ENABLED);
+        }else{
+            $this->setIsEnabled(FALSE);
+        }
         
-        if ( isset($requestData->answerJson) )
-            $this->setAnswerJson($requestData->answerJson);
+        if ( isset($requestData->IS_USER_SEE_GOOD_ANSWER) ){
+            $this->setIsUserSeeGoodAnswer($requestData->IS_USER_SEE_GOOD_ANSWER);
+        }else{
+            $this->setIsUserSeeGoodAnswer(FALSE);
+        }
+        
+        if ( isset($requestData->ANSWER_JSON) )
+            $this->setAnswerJson($requestData->ANSWER_JSON);
+        
     }
     
     public function getData($includes = NULL)

@@ -59,12 +59,14 @@ class QuizResultsService extends AbstractCoreService {
             return;
         }
 
-        if ($request->END_DATE - $request->START_DATE > $quizInfo->getTimeToComplete()) {
+        if ((($request->END_DATE - $request->START_DATE ) < $quizInfo->getTimeToComplete()) || 
+                ((($request->END_DATE - $request->START_DATE ) == $quizInfo->getTimeToComplete()) 
+                && ( count(explode(",", $request->ANSWERS)) > 1 ))) {
+            $progress = 3;
+        } else {
             $progress = 2;
             $request->ANSWERS = NULL;
             $request->QUIZ_SCORE = NULL;
-        } else {
-            $progress = 3;
         }
 
         $progressId = $this->bootstrap->getEntityManager()
@@ -106,6 +108,7 @@ class QuizResultsService extends AbstractCoreService {
                     ->build();
             return;
         }
+
         $startDate = new DateTime();
         $startDate->setTimestamp($request->START_DATE);
         $endDate = new DateTime();
@@ -114,8 +117,6 @@ class QuizResultsService extends AbstractCoreService {
         //$endDate = DateTime::createFromFormat('Y-m-d', $this->request->getPostData()->END_DATE);
         if ($progress == 3) {
             $goodAnswers = explode("|", $quizInfo->getAnswerJson());
-
-
             for ($j = 0; $j < count($goodAnswers); $j++) { //GENERE UN JSON AVEC LE STRING DE "ASNWER"
                 $goodAnswers[$j] = explode(";", $goodAnswers[$j]);
                 for ($m = 0; $m < count($goodAnswers[$j]); $m++) {
@@ -134,7 +135,6 @@ class QuizResultsService extends AbstractCoreService {
             $sectionCounter = 0;
             $questionCounter = 0;
             $maxScorePerSection = array();
-
 
             for ($i = 0; $i <= count($resultRawData); $i++) {
                 $newSection = $this->getDataFromString($resultRawData[$i], "s", "q");
@@ -158,7 +158,7 @@ class QuizResultsService extends AbstractCoreService {
                     $sectionCounter++;
                 }
                 $score += (int) $weight;
-                if (!isset($resultsCompiledData->{'section' . $section})){
+                if (!isset($resultsCompiledData->{'section' . $section})) {
                     $resultsCompiledData->{'section' . $section} = new stdClass();
                 }
                 $resultsCompiledData->{'section' . $section}->{'question' . $question} = new stdClass();
@@ -168,7 +168,6 @@ class QuizResultsService extends AbstractCoreService {
                 array_push($maxScorePerSection, $resultsCompiledData->{'section' . $section}->{'question' . $question}->{'maxScore'});
                 $questionCounter++;
             }
-
 
             if ($score < 0)
                 $score = 0;
@@ -193,6 +192,7 @@ class QuizResultsService extends AbstractCoreService {
             }
             $request->QUIZ_SCORE = $sectionResultString;
         }
+
         $quizResults = new QuizResults();
         $quizResults->mapPostData($request);
         $quizResults->setQuizID($quizInfo)

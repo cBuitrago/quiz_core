@@ -20,7 +20,7 @@ class QuizService extends AbstractCoreService {
     public function __construct($request, $bootstrap) {
         parent::__construct($request, $bootstrap);
     }
-    
+
     public function add() {
         $clientAuthorization = new Permission();
         $clientAuthorization->addRequired('is_god');
@@ -29,13 +29,13 @@ class QuizService extends AbstractCoreService {
         $userGroupPermission = new Permission();
 
         $accountId = $this->request->getPathParamByName('account_info_id');
-        if ( $this->userInfo->validatePermissions($userCorpoPermission, $accountId) === FALSE ) {
+        if ($this->userInfo->validatePermissions($userCorpoPermission, $accountId) === FALSE) {
             $this->securityLog('user_unauthorized');
             $this->response->setResponseStatus(403)
                     ->build();
             return;
         }
-        
+
         $validator = FALSE;
         $quizValidator = $this->bootstrap->getEntityManager()
                 ->getRepository('com\novaconcept\entity\Quiz')
@@ -46,17 +46,16 @@ class QuizService extends AbstractCoreService {
                     ->build();
             return;
         }
-        
+
         $quizInfo = new Quiz();
         $quizInfo->mapPostData($this->request->getPostData());
-        
+
         $this->bootstrap->getEntityManager()->persist($quizInfo);
         $this->bootstrap->getEntityManager()->flush();
-        
-        foreach($this->request->getPostData()->agencies as $agency)
-        {
+
+        foreach ($this->request->getPostData()->agencies as $agency) {
             $agencyInfo = $this->bootstrap->getEntityManager()
-                ->find('com\novaconcept\entity\DepartmentInfo', $agency);
+                    ->find('com\novaconcept\entity\DepartmentInfo', $agency);
             if ($agencyInfo == NULL) {
                 continue;
             }
@@ -65,17 +64,94 @@ class QuizService extends AbstractCoreService {
                     ->setQuizInfo($quizInfo)
                     ->setStartDate(new DateTime())
                     ->setEndDate(new DateTime());
-            
+
             $this->bootstrap->getEntityManager()->persist($newQuizAuthorization);
         }
-        
+
         $this->bootstrap->getEntityManager()->flush();
-                
+
         $this->securityLog(201);
         $this->response->setResponseStatus(201)
                 ->build();
     }
-    
+
+    public function edit() {
+
+        $clientAuthorization = new Permission();
+        $clientAuthorization->addRequired('is_god');
+        $userCorpoPermission = new Permission();
+        $userCorpoPermission->addRequired('is_corpo_admin');
+        $userGroupPermission = new Permission();
+
+        $accountId = $this->request->getPathParamByName('account_info_id');
+        if ($this->userInfo->validatePermissions($userCorpoPermission, $accountId) === FALSE) {
+            $this->securityLog('user_unauthorized');
+            $this->response->setResponseStatus(403)
+                    ->build();
+            return;
+        }
+
+        $quizInfo = $this->bootstrap->getEntityManager()
+                ->find('com\novaconcept\entity\Quiz', $this->request->getPathParamByName('id'));
+        if ($quizInfo == NULL) {
+            $this->securityLog('quiz_not_found');
+            $this->response->setResponseStatus(404)
+                    ->build();
+            return;
+        }
+
+        $validator = FALSE;
+        $quizValidator = $this->bootstrap->getEntityManager()
+                ->getRepository('com\novaconcept\entity\Quiz')
+                ->findOneBy(array('quizId' => $this->request->getPostData()->QUIZ_ID));
+        if ($quizValidator != NULL && $quizValidator != $quizInfo) {
+            $this->securityLog('quiz_already_exists');
+            $this->response->setResponseStatus(409)
+                    ->build();
+            return;
+        }
+
+        $quizInfo->mergePostData($this->request->getPostData());
+        $this->bootstrap->getEntityManager()->merge($quizInfo);
+        $this->bootstrap->getEntityManager()->flush();
+        $corpo = $this->userInfo->getDepartmentInfoCollection()->first()->getParent()->getParent();
+
+        $authorizations = array_unique($this->request->getPostData()->AGENCY_QUIZ);
+        foreach ($quizInfo->getQuizAuthorizationCollection() as $quizAuthorization) {
+            if ($quizAuthorization->getDepartmentInfo()->getParent()->getParent() === $corpo) {
+                $cle = array_search($quizAuthorization->getDepartmentInfo()->getId(), $authorizations);
+                if ($cle === FALSE) {
+                    $this->bootstrap->getEntityManager()->remove($quizAuthorization);
+                } else {
+                    unset($authorizations[$cle]);
+                }
+            }
+        }
+        $this->bootstrap->getEntityManager()->flush();
+
+        foreach ($authorizations as $departmentId) {
+            $departmentInfo = $this->bootstrap->getEntityManager()
+                    ->find('com\novaconcept\entity\DepartmentInfo', $departmentId);
+            if ($departmentInfo == NULL) {
+                continue;
+            }
+            if ($departmentInfo->getParent()->getParent() != $corpo) {
+                continue;
+            }
+            $newAuthorization = new QuizAuthorization();
+            $newAuthorization->setDepartmentInfo($departmentInfo)
+                    ->setQuizInfo($quizInfo)
+                    ->setStartDate(new DateTime())
+                    ->setEndDate(new DateTime());
+            $this->bootstrap->getEntityManager()->persist($newAuthorization);
+            $this->bootstrap->getEntityManager()->flush();
+        }
+
+        $this->securityLog(200);
+        $this->response->setResponseStatus(200)
+                ->build();
+    }
+
     public function test() {
         //set_time_limit ( 150 );
         $clientAuthorization = new Permission();
@@ -279,16 +355,56 @@ class QuizService extends AbstractCoreService {
             return;
         }
 
-        $data = [];
         $departmentInfo = $this->userInfo->getDepartmentInfoCollection()->first();
         $data = [];
         foreach ($departmentInfo->getQuizAuthorizationCollection() as $authorization) {
             $result_array = $authorization->getQuizInfo()->getDataArray();
             $result_array['START_DATE'] = $authorization->getStartDate();
             $result_array['END_DATE'] = $authorization->getEndDate();
+            foreach ($this->userInfo->getQuizResultsCollection() as $quizResult){
+                if ($quizResult->getQuizID() ==  $authorization->getQuizInfo()){
+                    $result_array['RESULT'] = TRUE;
+                }
+            }
             array_push($data, $result_array);
         }
 
+        $this->securityLog(200);
+        $this->response->setResponseStatus(200)
+                ->setResponseData($data)
+                ->build();
+    }
+
+    public function getQuizCorpo() {
+        $clientAuthorization = new Permission();
+        $clientAuthorization->addRequired('is_god');
+        $userCorpoPermission = new Permission();
+        $userCorpoPermission->addRequired('is_corpo_admin');
+
+        $accountId = $this->request->getPathParamByName('account_info_id');
+        if ($this->userInfo->validatePermissions($userCorpoPermission, $accountId) === FALSE) {
+            $this->securityLog('user_unauthorized');
+            $this->response->setResponseStatus(403)
+                    ->build();
+            return;
+        }
+
+        $corpoInfo = $this->userInfo->getDepartmentInfoCollection()->first()->getParent()->getParent();
+        $data = [];
+        $allQuiz = $this->bootstrap->getEntityManager()
+                ->getRepository('com\novaconcept\entity\Quiz')
+                ->findAll();
+        foreach ($allQuiz as $quiz) {
+            foreach ($quiz->getQuizAuthorizationCollection() as $authorization) {
+                if ($authorization->getDepartmentInfo()->getParent()->getParent() == $corpoInfo) {
+                    $result_array = $authorization->getQuizInfo()->getDataArray();
+                    $result_array['START_DATE'] = $authorization->getStartDate();
+                    $result_array['END_DATE'] = $authorization->getEndDate();
+                    array_push($data, $result_array);
+                    break;
+                }
+            }
+        }
         $this->securityLog(200);
         $this->response->setResponseStatus(200)
                 ->setResponseData($data)
@@ -317,7 +433,7 @@ class QuizService extends AbstractCoreService {
                     ->build();
             return;
         }
-        
+
         $validator = FALSE;
         $quizInfo = $this->bootstrap->getEntityManager()
                 ->find('com\novaconcept\entity\Quiz', $this->request->getPathParamByName('id'));
@@ -327,17 +443,41 @@ class QuizService extends AbstractCoreService {
                     ->build();
             return;
         }
-        
-        
+
         $departmentInfo = $this->userInfo->getDepartmentInfoCollection()->first();
+        $corpo = $this->userInfo->getDepartmentInfoCollection()->first()->getParent()->getParent();
         $data = [];
-        foreach ($departmentInfo->getQuizAuthorizationCollection() as $authorization) {
-            if($authorization->getQuizInfo() == $quizInfo){
-                $data = $authorization->getQuizInfo()->getDataArray();
-                $data['START_DATE'] = $authorization->getStartDate();
-                $data['END_DATE'] = $authorization->getEndDate();
-                $validator = TRUE;
-                continue;
+        if ($this->userInfo->validatePermissions($userCorpoPermission, $accountId) === TRUE) {
+            foreach ( $quizInfo->getQuizAuthorizationCollection() as $authorization ) {
+                if ($authorization->getDepartmentInfo()->getParent()->getParent() == $corpo) {
+                    $data = $authorization->getQuizInfo()->getDataArray();
+                    $data['START_DATE'] = $authorization->getStartDate();
+                    $data['END_DATE'] = $authorization->getEndDate();
+                    $validator = TRUE;
+                    foreach ($this->userInfo->getQuizResultsCollection() as $quizResult){
+                        if ($quizResult->getQuizID() ==  $authorization->getQuizInfo()){
+                            $data['RESULT'] = TRUE;
+                            $data['RESULT_PROGRESS_ID'] = $quizResult->getProgressId()->getId();
+                        }
+                    }
+                    break;
+                }
+            }
+        } else {
+            foreach ($departmentInfo->getQuizAuthorizationCollection() as $authorization) {
+                if ($authorization->getQuizInfo() == $quizInfo) {
+                    $data = $authorization->getQuizInfo()->getDataArray();
+                    $data['START_DATE'] = $authorization->getStartDate();
+                    $data['END_DATE'] = $authorization->getEndDate();
+                    $validator = TRUE;
+                    foreach ($this->userInfo->getQuizResultsCollection() as $quizResult){
+                        if ($quizResult->getQuizID() ==  $authorization->getQuizInfo()){
+                            $data['RESULT'] = TRUE;
+                            $data['RESULT_PROGRESS_ID'] = $quizResult->getProgressId()->getId();
+                        }
+                    }
+                    break;
+                }
             }
         }
         if ($validator === FALSE) {
@@ -346,7 +486,53 @@ class QuizService extends AbstractCoreService {
                     ->build();
             return;
         }
-        
+
+        $this->securityLog(200);
+        $this->response->setResponseStatus(200)
+                ->setResponseData($data)
+                ->build();
+    }
+
+    public function getQuizIdAgencies() {
+        $clientPermission = new Permission();
+        $clientPermission->addRequired('can_manage_departments');
+        $userCorpoPermission = new Permission();
+        $userCorpoPermission->addRequired('is_corpo_admin');
+
+        $accountId = $this->request->getPathParamByName('account_info_id');
+        if ($this->userInfo->validatePermissions($userCorpoPermission, $accountId) === FALSE) {
+            $this->securityLog('user_unauthorized');
+            $this->response->setResponseStatus(403)
+                    ->build();
+            return;
+        }
+        $quizInfo = $this->bootstrap->getEntityManager()
+                ->find('com\novaconcept\entity\Quiz', $this->request->getPathParamByName('id'));
+        if ($quizInfo == NULL) {
+            $this->securityLog('quiz_not_found');
+            $this->response->setResponseStatus(404)
+                    ->build();
+            return;
+        }
+
+        $data = [];
+
+        $corpoDepartment = $this->userInfo->getDepartmentInfoCollection()->first()->getParent()->getParent();
+        foreach ($corpoDepartment->getChildrenCollection() as $groupDepartment) {
+            foreach ($groupDepartment->getChildrenCollection() as $agencyDepartment) {
+                if ($agencyDepartment->getDescription() == "IS_AGENCY") {
+                    $agency = $agencyDepartment->getData();
+                    foreach ($agencyDepartment->getQuizAuthorizationCollection() as $quizAuthorization) {
+                        if ($quizAuthorization->getQuizInfo() == $quizInfo) {
+                            $agency->quizAuthorization = TRUE;
+                            break;
+                        }
+                    }
+                    array_push($data, $agency);
+                }
+            }
+        }
+
         $this->securityLog(200);
         $this->response->setResponseStatus(200)
                 ->setResponseData($data)

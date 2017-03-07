@@ -257,6 +257,7 @@ class DepartmentInfoService extends AbstractCoreService {
                         $agency = [];
                         $agency['id'] = $agencyDepartment->getId();
                         $agency['name'] = $agencyDepartment->getName();
+                        $agency['parentName'] = $agencyDepartment->getParent()->getName();
                         array_push($data, $agency);
                     }
                 }
@@ -269,6 +270,7 @@ class DepartmentInfoService extends AbstractCoreService {
                     $agency = [];
                     $agency['id'] = $agencyDepartment->getId();
                     $agency['name'] = $agencyDepartment->getName();
+                    $agency['parentName'] = $agencyDepartment->getParent()->getName();
                     array_push($data, $agency);
                 }
             }
@@ -279,6 +281,7 @@ class DepartmentInfoService extends AbstractCoreService {
                 $agency = [];
                 $agency['id'] = $agencyDepartment->getId();
                 $agency['name'] = $agencyDepartment->getName();
+                $agency['parentName'] = $agencyDepartment->getParent()->getName();
                 array_push($data, $agency);
             }
         }
