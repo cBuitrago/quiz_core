@@ -23,6 +23,7 @@ class QuizResultsService extends AbstractCoreService {
     }
 
     public function add() {
+
         $clientPermission = new Permission();
         $clientPermission->addRequired('can_manage_users')
                 ->addRequired('can_manage_user_permissions');
@@ -59,14 +60,13 @@ class QuizResultsService extends AbstractCoreService {
             return;
         }
 
-        if ((($request->END_DATE - $request->START_DATE ) < $quizInfo->getTimeToComplete()) || 
-                ((($request->END_DATE - $request->START_DATE ) == $quizInfo->getTimeToComplete()) 
-                && ( count(explode(",", $request->ANSWERS)) > 1 ))) {
+        if ((($request->END_DATE - $request->START_DATE ) < $quizInfo->getTimeToComplete()) ||
+                ((($request->END_DATE - $request->START_DATE ) == $quizInfo->getTimeToComplete()) && ( count(explode(",", $request->ANSWERS)) > 1 ))) {
             $progress = 3;
         } else {
             $progress = 2;
-            $request->ANSWERS = NULL;
-            $request->QUIZ_SCORE = NULL;
+            $request->ANSWERS = "";
+            $request->QUIZ_SCORE = "";
         }
 
         $progressId = $this->bootstrap->getEntityManager()
@@ -117,7 +117,7 @@ class QuizResultsService extends AbstractCoreService {
         //$endDate = DateTime::createFromFormat('Y-m-d', $this->request->getPostData()->END_DATE);
         if ($progress == 3) {
             $goodAnswers = explode("|", $quizInfo->getAnswerJson());
-            for ($j = 0; $j < count($goodAnswers); $j++) { //GENERE UN JSON AVEC LE STRING DE "ASNWER"
+            for ($j = 0; $j < count($goodAnswers); $j++) {
                 $goodAnswers[$j] = explode(";", $goodAnswers[$j]);
                 for ($m = 0; $m < count($goodAnswers[$j]); $m++) {
                     $goodAnswers[$j][$m] = explode(",", $goodAnswers[$j][$m]);
@@ -135,13 +135,14 @@ class QuizResultsService extends AbstractCoreService {
             $sectionCounter = 0;
             $questionCounter = 0;
             $maxScorePerSection = array();
-
-            for ($i = 0; $i <= count($resultRawData); $i++) {
-                $newSection = $this->getDataFromString($resultRawData[$i], "s", "q");
-                $question = $this->getDataFromString($resultRawData[$i], "q", "a");
-                $answer = $this->getDataFromString($resultRawData[$i], "a");
-                $weight = $goodAnswers[$newSection][$question][$answer];
-
+            
+            $item =  count($resultRawData);
+            for ($i = 0; $i <= $item; $i++) {
+                    $newSection = $this->getDataFromString($resultRawData[$i], "s", "q");
+                    $question = $this->getDataFromString($resultRawData[$i], "q", "a");
+                    $answer = $this->getDataFromString($resultRawData[$i], "a");
+                    $weight = $goodAnswers[$newSection][$question][$answer];
+                
                 if ($newSection != $section) {
                     if ($score < 0)
                         $score = 0;
@@ -157,10 +158,12 @@ class QuizResultsService extends AbstractCoreService {
                     $score = 0;
                     $sectionCounter++;
                 }
+                
                 $score += (int) $weight;
                 if (!isset($resultsCompiledData->{'section' . $section})) {
                     $resultsCompiledData->{'section' . $section} = new stdClass();
                 }
+                
                 $resultsCompiledData->{'section' . $section}->{'question' . $question} = new stdClass();
                 $resultsCompiledData->{'section' . $section}->{'question' . $question}->{'answer'} = $answer;
                 $resultsCompiledData->{'section' . $section}->{'question' . $question}->{'score'} = $weight;
@@ -218,19 +221,19 @@ class QuizResultsService extends AbstractCoreService {
         if ($valB != null) {
             $posB = strrpos($data, $valB);
             return substr($data, $posA, $posB - $posA);
-        } else
+        } else {
             return substr($data, $posA);
+        }
     }
 
     public function getHighestInArray($arrayToSort) {
         $highestValue = $arrayToSort[0];
         for ($m = 0; $m < count($arrayToSort); $m++) {
-
-            if ($m == 0)
+            if ($m == 0) {
                 $highestValue = $arrayToSort[$m];
-
-            else if ($arrayToSort[$m] > $highestValue)
+            } else if ($arrayToSort[$m] > $highestValue) {
                 $highestValue = $arrayToSort[$m];
+            }
         }
         return $highestValue;
     }

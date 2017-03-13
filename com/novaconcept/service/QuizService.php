@@ -84,7 +84,7 @@ class QuizService extends AbstractCoreService {
         $userGroupPermission = new Permission();
 
         $accountId = $this->request->getPathParamByName('account_info_id');
-        if ($this->userInfo->validatePermissions($userCorpoPermission, $accountId) === FALSE) {
+        if ( $this->userInfo->validatePermissions($userCorpoPermission, $accountId) === FALSE ) {
             $this->securityLog('user_unauthorized');
             $this->response->setResponseStatus(403)
                     ->build();
@@ -93,7 +93,7 @@ class QuizService extends AbstractCoreService {
 
         $quizInfo = $this->bootstrap->getEntityManager()
                 ->find('com\novaconcept\entity\Quiz', $this->request->getPathParamByName('id'));
-        if ($quizInfo == NULL) {
+        if ( $quizInfo == NULL ) {
             $this->securityLog('quiz_not_found');
             $this->response->setResponseStatus(404)
                     ->build();
@@ -104,7 +104,7 @@ class QuizService extends AbstractCoreService {
         $quizValidator = $this->bootstrap->getEntityManager()
                 ->getRepository('com\novaconcept\entity\Quiz')
                 ->findOneBy(array('quizId' => $this->request->getPostData()->QUIZ_ID));
-        if ($quizValidator != NULL && $quizValidator != $quizInfo) {
+        if ( $quizValidator != NULL && $quizValidator != $quizInfo ) {
             $this->securityLog('quiz_already_exists');
             $this->response->setResponseStatus(409)
                     ->build();
@@ -117,10 +117,10 @@ class QuizService extends AbstractCoreService {
         $corpo = $this->userInfo->getDepartmentInfoCollection()->first()->getParent()->getParent();
 
         $authorizations = array_unique($this->request->getPostData()->AGENCY_QUIZ);
-        foreach ($quizInfo->getQuizAuthorizationCollection() as $quizAuthorization) {
-            if ($quizAuthorization->getDepartmentInfo()->getParent()->getParent() === $corpo) {
+        foreach ( $quizInfo->getQuizAuthorizationCollection() as $quizAuthorization ) {
+            if ( $quizAuthorization->getDepartmentInfo()->getParent()->getParent() === $corpo ) {
                 $cle = array_search($quizAuthorization->getDepartmentInfo()->getId(), $authorizations);
-                if ($cle === FALSE) {
+                if ( $cle === FALSE ) {
                     $this->bootstrap->getEntityManager()->remove($quizAuthorization);
                 } else {
                     unset($authorizations[$cle]);
@@ -129,13 +129,13 @@ class QuizService extends AbstractCoreService {
         }
         $this->bootstrap->getEntityManager()->flush();
 
-        foreach ($authorizations as $departmentId) {
+        foreach ( $authorizations as $departmentId ) {
             $departmentInfo = $this->bootstrap->getEntityManager()
                     ->find('com\novaconcept\entity\DepartmentInfo', $departmentId);
-            if ($departmentInfo == NULL) {
+            if ( $departmentInfo == NULL ) {
                 continue;
             }
-            if ($departmentInfo->getParent()->getParent() != $corpo) {
+            if ( $departmentInfo->getParent()->getParent() != $corpo ) {
                 continue;
             }
             $newAuthorization = new QuizAuthorization();
