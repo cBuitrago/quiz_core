@@ -499,9 +499,12 @@ class DepartmentInfoService extends AbstractCoreService {
         $clientPermission->addRequired('can_manage_departments');
         $userCorpoPermission = new Permission();
         $userCorpoPermission->addRequired('is_corpo_admin');
+        $userGroupPermission = new Permission();
+        $userGroupPermission->addRequired('is_group_admin');
 
         $accountId = $this->request->getPathParamByName('account_info_id');
-        if ($this->userInfo->validatePermissions($userCorpoPermission, $accountId) === FALSE) {
+        if ($this->userInfo->validatePermissions($userCorpoPermission, $accountId) === FALSE &&
+                $this->userInfo->validatePermissions($userGroupPermission, $accountId) === FALSE) {
             $this->securityLog('user_unauthorized');
             $this->response->setResponseStatus(403)
                     ->build();
@@ -509,14 +512,25 @@ class DepartmentInfoService extends AbstractCoreService {
         }
         $data = [];
 
-        $corpoDepartment = $this->userInfo->getDepartmentInfoCollection()->first()->getParent()->getParent();
-        foreach ($corpoDepartment->getChildrenCollection() as $groupDepartment) {
+        if ($this->userInfo->validatePermissions($userCorpoPermission, $accountId) === TRUE) {
+            $corpoDepartment = $this->userInfo->getDepartmentInfoCollection()->first()->getParent()->getParent();
+            foreach ($corpoDepartment->getChildrenCollection() as $groupDepartment) {
                 foreach ($groupDepartment->getChildrenCollection() as $agencyDepartment) {
                     if ($agencyDepartment->getDescription() == "IS_AGENCY") {
                         array_push($data, $agencyDepartment->getData());
                     }
+                }
             }
         }
+        if ($this->userInfo->validatePermissions($userGroupPermission, $accountId) === TRUE) {
+            $groupDepartment = $this->userInfo->getDepartmentInfoCollection()->first()->getParent()->getParent();
+            foreach ($groupDepartment->getChildrenCollection() as $agencyDepartment) {
+                if ($agencyDepartment->getDescription() == "IS_AGENCY") {
+                    array_push($data, $agencyDepartment->getData());
+                }
+            }
+        }
+
         $this->securityLog(200);
         $this->response->setResponseStatus(200)
                 ->setResponseData($data)
