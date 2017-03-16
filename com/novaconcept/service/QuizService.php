@@ -12,6 +12,7 @@ use com\novaconcept\entity\UserAuthentication;
 use com\novaconcept\entity\UserAuthorization;
 use com\novaconcept\entity\UserInfo;
 use com\novaconcept\entity\UserQuizGroup;
+use com\novaconcept\entity\CreateUsers;
 use DateTime;
 use stdClass;
 
@@ -162,8 +163,8 @@ class QuizService extends AbstractCoreService {
 
         $accountInfo = $this->bootstrap->getEntityManager()
                 ->find('com\novaconcept\entity\AccountInfo', $accountId);
-
-        $quiz = array("1", "2");
+        
+        /*$quiz = array("1", "2");
         $is_completed = array("1", "2", "3");
         $passed_data = 20000;
         $recordnb = 0;
@@ -292,7 +293,7 @@ class QuizService extends AbstractCoreService {
             $this->bootstrap->getEntityManager()->flush();
 
             $user_id_nb++;
-        }
+        }*/
         $this->securityLog(200);
         $this->response->setResponseStatus(200)
                 ->build();

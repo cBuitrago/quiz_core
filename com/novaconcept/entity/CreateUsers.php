@@ -39,37 +39,37 @@ class CreateUsers extends AbstractEntity
 
     /**
      * @var string
-     * @ORM\Column(name="prenom", nullable=false)
+     * @ORM\Column(name="prenom", type="string", length=128, nullable=false)
      */
     private $prenom;
     
     /**
      * @var string
-     * @ORM\Column(name="nom", nullable=false)
+     * @ORM\Column(name="nom", type="string", length=128, nullable=false)
      */
     private $nom;
     
     /**
      * @var string
-     * @ORM\Column(name="psw", nullable=false)
+     * @ORM\Column(name="psw", type="string", length=128, nullable=false)
      */
     private $psw;
     
     /**
      * @var string
-     * @ORM\Column(name="groupe", nullable=false)
+     * @ORM\Column(name="groupe", type="string", length=128, nullable=false)
      */
     private $groupe;
     
     /**
      * @var string
-     * @ORM\Column(name="agence", nullable=false)
+     * @ORM\Column(name="agence", type="string", length=128, nullable=false)
      */
     private $agence;
     
     /**
      * @var string
-     * @ORM\Column(name="role", nullable=false)
+     * @ORM\Column(name="role", type="string", length=128, nullable=false)
      */
     private $role;
 

@@ -10,6 +10,7 @@ use com\novaconcept\entity\transient\Authorization;
 use com\novaconcept\entity\transient\Permission;
 use com\novaconcept\entity\UserInfo;
 use com\novaconcept\utility\ServiceUtil;
+use com\novaconcept\utility\Constants;
 use microtime;
 use stdClass;
 
@@ -42,12 +43,12 @@ class AbstractCoreService extends AbstractService
         
         $this->authorization = new Authorization();
         $this->authorization->mapData($this->request->getUrl(),
-                $this->request->getRequestHeader('Date'),
-                $this->request->getRequestHeader('Authorization'));
+                $this->request->getRequestHeader(Constants::DATE),
+                $this->request->getRequestHeader(Constants::AUTHORIZATION));
 
         if ($this->authorization->getIsValid() === FALSE)
         {
-            $this->authorization->failed(401, 'unauthenticated');
+            $this->authorization->failed(Constants::UNAUTHORIZED, Constants::UNAUTHENTICATED_STR);
             return;
         }
         
@@ -64,7 +65,7 @@ class AbstractCoreService extends AbstractService
         $this->service->authenticateReplay($this->authorization, $this->request->getRequestMethod());
         if ($this->authorization->getIsValid() === FALSE)
         {
-            $this->authorization->failed(403, 'call_conflict');
+            $this->authorization->failed(Constants::UNAUTHORIZED, Constants::UNAUTHENTICATED_STR);
             return;
         }
         
