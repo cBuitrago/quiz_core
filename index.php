@@ -23,7 +23,7 @@ ApiConfig::setFileLocation("api_config.json");
 
 if (ApiConfig::getData()->settings->mode == "development")
 {
-    error_reporting(0);
+    error_reporting(-1);
     ini_set('display_errors', 'On');
 }
 $routUtil = new RoutUtil();

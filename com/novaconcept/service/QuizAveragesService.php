@@ -11,6 +11,7 @@ use com\novaconcept\entity\UserAuthorization;
 use com\novaconcept\entity\UserInfo;
 use com\novaconcept\utility\ApiConfig;
 use com\novaconcept\utility\StorageSdk;
+use com\novaconcept\utility\Constants;
 use DateTime;
 use stdClass;
 
@@ -30,27 +31,25 @@ class QuizAveragesService extends AbstractCoreService {
 
     public function get() {
         $clientAuthorization = new Permission();
-        $clientAuthorization->addRequired('is_god');
-        $userAuthorization = new Permission();
-        $accountId = $this->request->getPathParamByName('account_info_id');
+        $clientAuthorization->addRequired(Constants::GOD);
         $userCorpoPermission = new Permission();
-        $userCorpoPermission->addRequired('is_corpo_admin');
+        $userCorpoPermission->addRequired(Constants::CORPO);
         $userGroupPermission = new Permission();
-        $userGroupPermission->addRequired('is_group_admin');
+        $userGroupPermission->addRequired(Constants::GROUP);
         $userAgencyPermission = new Permission();
-        $userAgencyPermission->addRequired('is_agency_admin');
+        $userAgencyPermission->addRequired(Constants::AGENCY);
 
-        $accountId = $this->request->getPathParamByName('account_info_id');
+        $accountId = $this->request->getPathParamByName(Constants::ACCOUNT);
         if ($this->userInfo->validatePermissions($userCorpoPermission, $accountId) === FALSE &&
                 $this->userInfo->validatePermissions($userGroupPermission, $accountId) === FALSE &&
                 $this->userInfo->validatePermissions($userAgencyPermission, $accountId) === FALSE) {
-            $this->securityLog('user_unauthorized');
-            $this->response->setResponseStatus(403)
+            $this->securityLog(Constants::UNAUTHORIZED_STR);
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
         $accountInfo = $this->bootstrap->getEntityManager()
-                ->find('com\novaconcept\entity\AccountInfo', $accountId);
+                ->find(Constants::ACCOUNT_INFO_REP, $accountId);
         $this->GetUniqueID($this->request->getPostData());
 
         $data = [];
@@ -58,19 +57,19 @@ class QuizAveragesService extends AbstractCoreService {
         if (array_search('none', explode(",", $this->request->getQueryParam("includes"))) !== FALSE) {
             foreach ($this->UniqueUserID as $user) {
                 $userInfo = $this->bootstrap->getEntityManager()
-                        ->find('com\novaconcept\entity\UserInfo', $user);
+                        ->find(Constants::USER_INFO_REP, $user);
                 if ($userInfo == NULL) {
-                    $this->securityLog('user_not_found');
-                    $this->response->setResponseStatus(404)
+                    $this->securityLog(Constants::NOT_FOUND_STR);
+                    $this->response->setResponseStatus(Constants::NOT_FOUND)
                             ->build();
                     return;
                 }
                 $securityTesterUser = FALSE;
                 foreach ($userInfo->getDepartmentAuthorizationCollection() as $authorizationDepartment) {
-                    if ($authorizationDepartment->getDepartmentInfo()->getDescription() == 'IS_AGENCY') {
+                    if ($authorizationDepartment->getDepartmentInfo()->getDescription() == Constants::DESC_AGENCY) {
                         $corpoUser = $authorizationDepartment->getDepartmentInfo()->getParent()->getParent();
                         foreach ($this->userInfo->getDepartmentAuthorizationCollection() as $authorizationDepartmentInfo) {
-                            if ($authorizationDepartmentInfo->getDepartmentInfo()->getDescription() == 'IS_AGENCY') {
+                            if ($authorizationDepartmentInfo->getDepartmentInfo()->getDescription() == Constants::DESC_AGENCY) {
                                 $corpoUserInfo = $authorizationDepartmentInfo->getDepartmentInfo()->getParent()->getParent();
                                 if ($corpoUser == $corpoUserInfo) {
                                     $securityTesterUser = TRUE;
@@ -88,7 +87,7 @@ class QuizAveragesService extends AbstractCoreService {
                             $quiz_result['QUIZ_SCORE'] = $result->getQuizScore();
                             $quiz_result['QUIZ_ID'] = $result->getQuizID()->getId();
                             $quizGroupQuizList = $this->bootstrap->getEntityManager()
-                                    ->getRepository('com\novaconcept\entity\QuizGroupQuizList')
+                                    ->getRepository(Constants::QUIZ_GROUP_QUIZ_LIST_REP)
                                     ->findOneBy(array('quizId' => $result->getQuizID()->getId()));
                             $quiz_result['QUIZ_GROUP_ID'] = $quizGroupQuizList->getQuizGroupID();
                             $quiz_result['QUIZ_ORDER'] = $quizGroupQuizList->getOrderNB();
@@ -107,16 +106,16 @@ class QuizAveragesService extends AbstractCoreService {
             $agencies_averages = [];
             foreach ($this->AgencyUniqueID as $agency) {
                 $agencyInfo = $this->bootstrap->getEntityManager()
-                        ->find('com\novaconcept\entity\DepartmentInfo', $agency);
-                if ($agencyInfo == NULL || $agencyInfo->getDescription() != 'IS_AGENCY') {
-                    $this->securityLog('agency_not_found');
-                    $this->response->setResponseStatus(404)
+                        ->find(Constants::DEPARTMENT_INFO_REP, $agency);
+                if ($agencyInfo == NULL || $agencyInfo->getDescription() != Constants::DESC_AGENCY) {
+                    $this->securityLog(Constants::NOT_FOUND_STR);
+                    $this->response->setResponseStatus(Constants::NOT_FOUND)
                             ->build();
                     return;
                 }
                 $securityTesterAgency = FALSE;
                 foreach ($this->userInfo->getDepartmentAuthorizationCollection() as $authorizationDepartment) {
-                    if ($authorizationDepartment->getDepartmentInfo()->getDescription() == 'IS_AGENCY') {
+                    if ($authorizationDepartment->getDepartmentInfo()->getDescription() == Constants::DESC_AGENCY) {
                         $corpoUser = $authorizationDepartment->getDepartmentInfo()->getParent()->getParent();
                         if ($corpoUser == $agencyInfo->getParent()->getParent()) {
                             $securityTesterAgency = TRUE;
@@ -160,11 +159,11 @@ class QuizAveragesService extends AbstractCoreService {
         if (array_search('GROUPS', explode(",", $this->request->getQueryParam("includes"))) !== FALSE) {
             foreach ($this->GroupUniqueID as $group) {
                 $groupInfo = $this->bootstrap->getEntityManager()
-                        ->find('com\novaconcept\entity\DepartmentInfo', $group);
+                        ->find(Constants::DEPARTMENT_INFO_REP, $group);
 
-                if ($groupInfo == NULL || $groupInfo->getDescription() != 'IS_GROUP') {
-                    $this->securityLog('group_not_found');
-                    $this->response->setResponseStatus(404)
+                if ($groupInfo == NULL || $groupInfo->getDescription() != Constants::DESC_GROUP) {
+                    $this->securityLog(Constants::NOT_FOUND_STR);
+                    $this->response->setResponseStatus(Constants::NOT_FOUND)
                             ->build();
                     return;
                 }
@@ -173,7 +172,7 @@ class QuizAveragesService extends AbstractCoreService {
                 $quiz_id = [];
                 $securityTesterGroup = FALSE;
                 foreach ($this->userInfo->getDepartmentAuthorizationCollection() as $authorizationDepartment) {
-                    if ($authorizationDepartment->getDepartmentInfo()->getDescription() == 'IS_AGENCY') {
+                    if ($authorizationDepartment->getDepartmentInfo()->getDescription() == Constants::DESC_AGENCY) {
                         $corpoUser = $authorizationDepartment->getDepartmentInfo()->getParent()->getParent();
                         if ($corpoUser == $groupInfo->getParent()) {
                             $securityTesterGroup = TRUE;
@@ -224,17 +223,17 @@ class QuizAveragesService extends AbstractCoreService {
             $corpo_averages = [];
             foreach ($this->CorporateUniqueID as $corporate) {
                 $corporateInfo = $this->bootstrap->getEntityManager()
-                        ->find('com\novaconcept\entity\DepartmentInfo', $corporate);
+                        ->find(Constants::DEPARTMENT_INFO_REP, $corporate);
 
-                if ($corporateInfo == NULL || $corporateInfo->getDescription() != 'IS_CORPO') {
-                    $this->securityLog('corporate_not_found');
-                    $this->response->setResponseStatus(404)
+                if ($corporateInfo == NULL || $corporateInfo->getDescription() != Constants::DESC_CORPO) {
+                    $this->securityLog(Constants::NOT_FOUND_STR);
+                    $this->response->setResponseStatus(Constants::NOT_FOUND)
                             ->build();
                     return;
                 }
                 $securityTesterCorpo = FALSE;
                 foreach ($this->userInfo->getDepartmentAuthorizationCollection() as $authorizationDepartment) {
-                    if ($authorizationDepartment->getDepartmentInfo()->getDescription() == 'IS_AGENCY') {
+                    if ($authorizationDepartment->getDepartmentInfo()->getDescription() == Constants::DESC_AGENCY) {
                         $corpoUser = $authorizationDepartment->getDepartmentInfo()->getParent()->getParent();
                         if ($corpoUser == $corporateInfo) {
                             $securityTesterCorpo = TRUE;
@@ -278,8 +277,8 @@ class QuizAveragesService extends AbstractCoreService {
             }
         }
 
-        $this->securityLog(200);
-        $this->response->setResponseStatus(200)
+        $this->securityLog(Constants::OK);
+        $this->response->setResponseStatus(Constants::OK)
                 ->setResponseData($data)
                 ->build();
     }

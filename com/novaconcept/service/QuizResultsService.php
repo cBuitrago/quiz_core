@@ -13,6 +13,7 @@ use com\novaconcept\entity\UserInfo;
 use com\novaconcept\entity\UserQuizGroup;
 use com\novaconcept\utility\ApiConfig;
 use com\novaconcept\utility\StorageSdk;
+use com\novaconcept\utility\Constants;
 use DateTime;
 use stdClass;
 
@@ -25,37 +26,36 @@ class QuizResultsService extends AbstractCoreService {
     public function add() {
 
         $clientPermission = new Permission();
-        $clientPermission->addRequired('can_manage_users')
-                ->addRequired('can_manage_user_permissions');
+        $clientPermission->addRequired(Constants::GOD);
         $userCorpoPermission = new Permission();
-        $userCorpoPermission->addRequired('is_corpo_admin');
+        $userCorpoPermission->addRequired(Constants::CORPO);
         $userGroupPermission = new Permission();
-        $userGroupPermission->addRequired('is_group_admin');
+        $userGroupPermission->addRequired(Constants::GROUP);
         $userAgencyPermission = new Permission();
-        $userAgencyPermission->addRequired('is_agency_admin');
+        $userAgencyPermission->addRequired(Constants::AGENCY);
         $userPermission = new Permission();
-        $userPermission->addRequired('is_user');
+        $userPermission->addRequired(Constants::USER);
 
-        $accountId = $this->request->getPathParamByName('account_info_id');
+        $accountId = $this->request->getPathParamByName(Constants::ACCOUNT);
         if ($this->userInfo->validatePermissions($userCorpoPermission, $accountId) === FALSE &&
                 $this->userInfo->validatePermissions($userGroupPermission, $accountId) === FALSE &&
                 $this->userInfo->validatePermissions($userAgencyPermission, $accountId) === FALSE &&
                 $this->userInfo->validatePermissions($userPermission, $accountId) === FALSE) {
-            $this->securityLog('user_unauthorized');
-            $this->response->setResponseStatus(403)
+            $this->securityLog(Constants::UNAUTHORIZED_STR);
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
         $request = $this->request->getPostData();
         $accountInfo = $this->bootstrap->getEntityManager()
-                ->find('com\novaconcept\entity\AccountInfo', $accountId);
+                ->find(Constants::ACCOUNT_INFO_REP, $accountId);
 
         $quizInfo = $this->bootstrap->getEntityManager()
-                ->getRepository('com\novaconcept\entity\Quiz')
+                ->getRepository(Constants::QUIZ_REP)
                 ->findOneBy(array('quizId' => $request->QUIZ_ID));
         if ($quizInfo == NULL) {
-            $this->securityLog('quiz_not_found');
-            $this->response->setResponseStatus(404)
+            $this->securityLog(Constants::NOT_FOUND_STR);
+            $this->response->setResponseStatus(Constants::NOT_FOUND)
                     ->build();
             return;
         }
@@ -70,16 +70,16 @@ class QuizResultsService extends AbstractCoreService {
         }
 
         $progressId = $this->bootstrap->getEntityManager()
-                ->find('com\novaconcept\entity\ProgressInfo', $progress);
+                ->find(Constants::PROGRESS_INFO_REP, $progress);
         if ($progressId == NULL) {
-            $this->securityLog('progress_status_not_found');
-            $this->response->setResponseStatus(404)
+            $this->securityLog(Constants::NOT_FOUND_STR);
+            $this->response->setResponseStatus(Constants::NOT_FOUND)
                     ->build();
             return;
         }
 
         $quizResultsConflict = $this->bootstrap->getEntityManager()
-                ->getRepository('com\novaconcept\entity\QuizResults')
+                ->getRepository(Constants::QUIZ_RESULTS_REP)
                 ->createQueryBuilder('u')
                 ->where('u.quizId = :quizId')
                 ->andWhere('u.userInfo = :userInfo')
@@ -88,8 +88,8 @@ class QuizResultsService extends AbstractCoreService {
                 ->getQuery()
                 ->getOneOrNullResult();
         if ($quizResultsConflict != NULL) {
-            $this->securityLog('quiz_results_already_exists');
-            $this->response->setResponseStatus(409)
+            $this->securityLog(Constants::CONFLICT_STR);
+            $this->response->setResponseStatus(Constants::CONFLICT)
                     ->build();
             return;
         }
@@ -103,8 +103,8 @@ class QuizResultsService extends AbstractCoreService {
         }
 
         if ($validation === FALSE) {
-            $this->securityLog('unauthorized');
-            $this->response->setResponseStatus(403)
+            $this->securityLog(Constants::UNAUTHORIZED_STR);
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
@@ -207,8 +207,8 @@ class QuizResultsService extends AbstractCoreService {
         $this->bootstrap->getEntityManager()->persist($quizResults);
         $this->bootstrap->getEntityManager()->flush();
 
-        $this->securityLog(201);
-        $this->response->setResponseStatus(201)
+        $this->securityLog(Constants::CREATED);
+        $this->response->setResponseStatus(Constants::CREATED)
                 ->setResponseData($quizInfo->getId())
                 ->build();
     }

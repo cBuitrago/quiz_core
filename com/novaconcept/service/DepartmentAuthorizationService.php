@@ -25,11 +25,11 @@ class DepartmentAuthorizationService extends AbstractCoreService {
             return;
         }
         $accountInfo = $this->bootstrap->getEntityManager()
-                ->find('com\novaconcept\entity\AccountInfo', $accountId);
+                ->find(Constants::ACCOUNT_INFO_REP, $accountId);
 
         $departmentAuthorizationData = $this->request->getPostData();
         $departmentAuthorization = $this->bootstrap->getEntityManager()
-                ->find('com\novaconcept\entity\DepartmentAuthorization', $this->request->getPathParamByName(UtilConstants::ID));
+                ->find(Constants::DEPARTMENT_AUTHORIZATION_REP, $this->request->getPathParamByName(Constants::ID));
         if ($departmentAuthorization == NULL) {
             $this->securityLog(Constants::NOT_FOUND_STR);
             $this->response->setResponseStatus(Constants::NOT_FOUND)
@@ -37,7 +37,7 @@ class DepartmentAuthorizationService extends AbstractCoreService {
             return;
         }
         $departmentInfo = $this->bootstrap->getEntityManager()
-                ->find('com\novaconcept\entity\DepartmentInfo', $this->request->getPostData()->departmentId);
+                ->find(Constants::DEPARTMENT_INFO_REP, $this->request->getPostData()->departmentId);
         if ($departmentInfo == NULL) {
             $this->securityLog(Constants::NOT_FOUND_STR);
             $this->response->setResponseStatus(Constants::NOT_FOUND)
@@ -81,7 +81,7 @@ class DepartmentAuthorizationService extends AbstractCoreService {
         }
 
         $conflictResult = $this->bootstrap->getEntityManager()
-                ->getRepository('com\novaconcept\entity\DepartmentAuthorization')
+                ->getRepository(Constants::DEPARTMENT_AUTHORIZATION_REP)
                 ->createQueryBuilder('u')
                 ->where('u.userInfo = :userInfo')
                 ->andWhere('u.departmentInfo = :departmentInfo')

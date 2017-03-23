@@ -5,6 +5,7 @@ namespace com\novaconcept\service;
 use com\novaconcept\entity\transient\Permission;
 use Doctrine\Common\Collections\ArrayCollection;
 use com\novaconcept\entity\DepartmentInfo;
+use com\novaconcept\utility\Constants;
 use stdClass;
 
 class ReportService extends AbstractCoreService {
@@ -17,33 +18,33 @@ class ReportService extends AbstractCoreService {
 
     public function report() {
         $clientAuthorization = new Permission();
-        $clientAuthorization->addRequired('is_god');
+        $clientAuthorization->addRequired(Constants::GOD);
         $userAuthorization = new Permission();
-        $accountId = $this->request->getPathParamByName('account_info_id');
+        $accountId = $this->request->getPathParamByName(Constants::ACCOUNT);
         if ($this->isAuthenticated($clientAuthorization, $userAuthorization, $accountId) === FALSE) {
-            $this->response->setResponseStatus(403)
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
         $accountInfo = $this->bootstrap->getEntityManager()
-                ->find('com\novaconcept\entity\AccountInfo', $accountId);
+                ->find(Constants::ACCOUNT_INFO_REP, $accountId);
 
         $this->data = [];
         $this->data[0] = [];
         $this->data[1] = [];
 
         $godAuthorization = new Permission();
-        $godAuthorization->addRequired('is_god');
+        $godAuthorization->addRequired(Constants::GOD);
         $corpoAuthorization = new Permission();
-        $corpoAuthorization->addRequired('is_corpo_admin');
+        $corpoAuthorization->addRequired(Constants::CORPO);
         $groupAuthorization = new Permission();
-        $groupAuthorization->addRequired('is_group_admin');
+        $groupAuthorization->addRequired(Constants::GROUP);
         $agencyAuthorization = new Permission();
-        $agencyAuthorization->addRequired('is_agency_admin');
+        $agencyAuthorization->addRequired(Constants::AGENCY);
 
         if ($this->userInfo->validatePermissions($godAuthorization, $accountId) !== FALSE) {
             foreach ($this->userInfo->getDepartmentInfoCollection() as $isDepartmentGod) {
-                if ($isDepartmentGod->getDescription() == 'IS_GOD') {
+                if ($isDepartmentGod->getDescription() == Constants::GOD) {
                     $godDepartment = $isDepartmentGod;
                 }
             }
@@ -53,7 +54,7 @@ class ReportService extends AbstractCoreService {
                 }
             }
             $quizArray = $this->bootstrap->getEntityManager()
-                    ->getRepository('com\novaconcept\entity\Quiz')
+                    ->getRepository(Constants::QUIZ_REP)
                     ->findAll();
             foreach ($quizArray as $quiz) {
                 $this->data[1][] = $quiz->getData();
@@ -67,7 +68,7 @@ class ReportService extends AbstractCoreService {
                 }
             }
             $quizArray = $this->bootstrap->getEntityManager()
-                    ->getRepository('com\novaconcept\entity\Quiz')
+                    ->getRepository(Constants::QUIZ_REP)
                     ->findAll();
             foreach ($quizArray as $quiz) {
                 $this->data[1][] = $quiz->getData();
@@ -94,7 +95,7 @@ class ReportService extends AbstractCoreService {
                 }
             }
             $quizArray = $this->bootstrap->getEntityManager()
-                    ->getRepository('com\novaconcept\entity\Quiz')
+                    ->getRepository(Constants::QUIZ_REP)
                     ->findAll();
             foreach ($quizArray as $quiz) {
                 $this->data[1][] = $quiz->getData();
@@ -119,7 +120,7 @@ class ReportService extends AbstractCoreService {
                 }
             }
             $quizArray = $this->bootstrap->getEntityManager()
-                    ->getRepository('com\novaconcept\entity\Quiz')
+                    ->getRepository(Constants::QUIZ_REP)
                     ->findAll();
             foreach ($quizArray as $quiz) {
                 $this->data[1][] = $quiz->getData();
@@ -127,53 +128,53 @@ class ReportService extends AbstractCoreService {
         }
 
         $progressInfo = $this->bootstrap->getEntityManager()
-                ->getRepository('com\novaconcept\entity\ProgressInfo')
+                ->getRepository(Constants::PROGRESS_INFO_REP)
                 ->findAll();
         $this->data[2] = [];
         foreach ($progressInfo as $progress) {
             $this->data[2][] = $progress->getData();
         }
 
-        $this->securityLog(200);
-        $this->response->setResponseStatus(200)
+        $this->securityLog(Constants::OK);
+        $this->response->setResponseStatus(Constants::OK)
                 ->setResponseData($this->data)
                 ->build();
     }
 
     public function reportSelf() {
         $clientAuthorization = new Permission();
-        $clientAuthorization->addRequired('is_god');
+        $clientAuthorization->addRequired(Constants::GOD);
         $userAuthorization = new Permission();
-        $accountId = $this->request->getPathParamByName('account_info_id');
+        $accountId = $this->request->getPathParamByName(Constants::ACCOUNT);
         if ($this->isAuthenticated($clientAuthorization, $userAuthorization, $accountId) === FALSE) {
-            $this->response->setResponseStatus(403)
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
         $accountInfo = $this->bootstrap->getEntityManager()
-                ->find('com\novaconcept\entity\AccountInfo', $accountId);
+                ->find(Constants::ACCOUNT_INFO_REP, $accountId);
 
         $this->data = [];
         $this->data[0] = [];
         $this->data[1] = [];
 
         $godAuthorization = new Permission();
-        $godAuthorization->addRequired('is_god');
+        $godAuthorization->addRequired(Constants::GOD);
         $corpoAuthorization = new Permission();
-        $corpoAuthorization->addRequired('is_corpo_admin');
+        $corpoAuthorization->addRequired(Constants::CORPO);
         $groupAuthorization = new Permission();
-        $groupAuthorization->addRequired('is_group_admin');
+        $groupAuthorization->addRequired(Constants::GROUP);
         $agencyAuthorization = new Permission();
-        $agencyAuthorization->addRequired('is_agency_admin');
+        $agencyAuthorization->addRequired(Constants::AGENCY);
         $userAuthorization = new Permission();
-        $userAuthorization->addRequired('is_user');
+        $userAuthorization->addRequired(Constants::USER);
 
         if ($this->userInfo->validatePermissions($corpoAuthorization, $accountId) === FALSE &&
                 $this->userInfo->validatePermissions($groupAuthorization, $accountId) === FALSE &&
                 $this->userInfo->validatePermissions($agencyAuthorization, $accountId) === FALSE &&
                 $this->userInfo->validatePermissions($userAuthorization, $accountId) === FALSE) {
-            $this->securityLog('user_unauthorized');
-            $this->response->setResponseStatus(403)
+            $this->securityLog(Constants::UNAUTHORIZED_STR);
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
@@ -181,7 +182,7 @@ class ReportService extends AbstractCoreService {
         $departmentInfo = $this->userInfo->getDepartmentInfoCollection()->first();
         foreach ($this->userInfo->getQuizResultsCollection() as $quizResult) {
             if ($quizResult->getProgressId()->getId() == 3 && 
-                   $quizResult->getQuizID()->getId() ==  $this->request->getPathParamByName('id')) {
+                   $quizResult->getQuizID()->getId() ==  $this->request->getPathParamByName(Constants::ID)) {
                 $quizResults = $quizResult->getData();
                 $quizResults[] = $quizResult->getQuizID()->getQuizID();
                 $quizResults[] = $quizResult->getUserID()->getUserName();
@@ -202,7 +203,7 @@ class ReportService extends AbstractCoreService {
                 $quiz_result['QUIZ_SCORE'] = $quizResult->getQuizScore();
                 $quiz_result['QUIZ_ID'] = $quizResult->getQuizID()->getId();
                 $quizGroupQuizList = $this->bootstrap->getEntityManager()
-                        ->getRepository('com\novaconcept\entity\QuizGroupQuizList')
+                        ->getRepository(Constants::QUIZ_GROUP_QUIZ_LIST_REP)
                         ->findOneBy(array('quizId' => $quizResult->getQuizID()->getId()));
                 $quiz_result['QUIZ_GROUP_ID'] = $quizGroupQuizList->getQuizGroupID();
                 $quiz_result['QUIZ_ORDER'] = $quizGroupQuizList->getOrderNB();
@@ -211,8 +212,8 @@ class ReportService extends AbstractCoreService {
             }
         }
 
-        $this->securityLog(200);
-        $this->response->setResponseStatus(200)
+        $this->securityLog(Constants::OK);
+        $this->response->setResponseStatus(Constants::OK)
                 ->setResponseData($this->data)
                 ->build();
     }
@@ -225,7 +226,7 @@ class ReportService extends AbstractCoreService {
                 if (!empty($info))
                     array_push($dataBuilder, $info);
             }
-            else if ($departmentInfo->getChildrenCollection()->count() == 0 && $departmentInfo->getDescription() == 'IS_AGENCY') {
+            else if ($departmentInfo->getChildrenCollection()->count() == 0 && $departmentInfo->getDescription() == Constants::DESC_AGENCY) {
                 foreach ($departmentInfo->getDepartmentAuthorizationCollection() as $department) {
                     if ($department->getUserInfo()->getQuizResultsCollection()->count() > 0) {
                         foreach ($department->getUserInfo()->getQuizResultsCollection() as $quizResult) {

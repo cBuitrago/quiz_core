@@ -4,57 +4,58 @@ namespace com\novaconcept\service;
 
 use com\novaconcept\entity\DepartmentInfo;
 use com\novaconcept\entity\transient\Permission;
+use com\novaconcept\utility\Constants;
 
 class DepartmentInfoService extends AbstractCoreService {
 
     public function add() {
         $clientPermission = new Permission();
-        $clientPermission->addRequired('can_manage_departments');
+        $clientPermission->addRequired(Constants::GOD);
         $userCorpoPermission = new Permission();
-        $userCorpoPermission->addRequired('is_corpo_admin');
+        $userCorpoPermission->addRequired(Constants::CORPO);
         $userGroupPermission = new Permission();
-        $userGroupPermission->addRequired('is_group_admin');
+        $userGroupPermission->addRequired(Constants::GROUP);
 
-        $accountId = $this->request->getPathParamByName('account_info_id');
+        $accountId = $this->request->getPathParamByName(Constants::ACCOUNT);
         if ($this->userInfo->validatePermissions($userCorpoPermission, $accountId) === FALSE &&
                 $this->userInfo->validatePermissions($userGroupPermission, $accountId) === FALSE) {
-            $this->securityLog('user_unauthorized');
-            $this->response->setResponseStatus(403)
+            $this->securityLog(Constants::UNAUTHORIZED_STR);
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
 
         if ($this->userInfo->validatePermissions($userGroupPermission, $accountId) === TRUE &&
-                ($this->request->getPostData()->description == "IS_CORPO" ||
-                $this->request->getPostData()->description == "IS_GROUP")) {
-            $this->securityLog('user_unauthorized');
-            $this->response->setResponseStatus(403)
+                ($this->request->getPostData()->description == Constants::DESC_CORPO ||
+                $this->request->getPostData()->description == Constants::DESC_GROUP)) {
+            $this->securityLog(Constants::UNAUTHORIZED_STR);
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
         $accountInfo = $this->bootstrap->getEntityManager()
-                ->find('com\novaconcept\entity\AccountInfo', $accountId);
+                ->find(Constants::ACCOUNT_INFO_REP, $accountId);
         $departmentInfo = new DepartmentInfo();
         $departmentInfo->setAccountInfo($accountInfo);
         $departmentInfo->mapPostData($this->request->getPostData());
 
         if (isset($this->request->getPostData()->parent)) {
             $parent = $this->bootstrap->getEntityManager()
-                    ->find('com\novaconcept\entity\DepartmentInfo', $this->request->getPostData()->parent);
+                    ->find(Constants::DEPARTMENT_INFO_REP, $this->request->getPostData()->parent);
             if ($parent == NULL) {
-                $this->securityLog('parent_department_not_found');
-                $this->response->setResponseStatus(404)
+                $this->securityLog(Constants::NOT_FOUND_STR);
+                $this->response->setResponseStatus(Constants::NOT_FOUND)
                         ->build();
                 return;
             }
             if ($parent->getAccountInfo() !== $accountInfo) {
-                $this->securityEvent('cross_account');
-                $this->response->setResponseStatus(403)
+                $this->securityEvent(Constants::UNAUTHORIZED_STR);
+                $this->response->setResponseStatus(Constants::FORBIDDEN)
                         ->build();
                 return;
             }
             $result = $this->bootstrap->getEntityManager()
-                    ->getRepository('com\novaconcept\entity\DepartmentInfo')
+                    ->getRepository(Constants::DEPARTMENT_INFO_REP)
                     ->createQueryBuilder('u')
                     ->where('u.accountInfo = :accountInfo')
                     ->andWhere('u.name = :name')
@@ -66,7 +67,7 @@ class DepartmentInfoService extends AbstractCoreService {
                     ->getOneOrNullResult();
         } else {
             $result = $this->bootstrap->getEntityManager()
-                    ->getRepository('com\novaconcept\entity\DepartmentInfo')
+                    ->getRepository(Constants::DEPARTMENT_INFO_REP)
                     ->createQueryBuilder('u')
                     ->where('u.accountInfo = :accountInfo')
                     ->andWhere('u.name = :name')
@@ -77,7 +78,7 @@ class DepartmentInfoService extends AbstractCoreService {
                     ->getOneOrNullResult();
         }
         if ($result != NULL) {
-            $this->response->setResponseStatus(409)
+            $this->response->setResponseStatus(Constants::CONFLICT)
                     ->build();
             return;
         }
@@ -88,82 +89,82 @@ class DepartmentInfoService extends AbstractCoreService {
         $this->bootstrap->getEntityManager()->persist($departmentInfo);
         $this->bootstrap->getEntityManager()->flush();
 
-        $this->securityLog(201);
-        $this->response->setResponseStatus(201)
+        $this->securityLog(Constants::CREATED);
+        $this->response->setResponseStatus(Constants::CREATED)
                 ->setResponseData($departmentInfo->getData())
                 ->build();
     }
 
     public function edit() {
         $clientPermission = new Permission();
-        $clientPermission->addRequired('can_manage_departments');
+        $clientPermission->addRequired(Constants::GOD);
         $userCorpoPermission = new Permission();
-        $userCorpoPermission->addRequired('is_corpo_admin');
+        $userCorpoPermission->addRequired(Constants::CORPO);
         $userGroupPermission = new Permission();
-        $userGroupPermission->addRequired('is_group_admin');
+        $userGroupPermission->addRequired(Constants::GROUP);
         $userAgencyPermission = new Permission();
-        $userAgencyPermission->addRequired('is_agency_admin');
+        $userAgencyPermission->addRequired(Constants::AGENCY);
 
-        $accountId = $this->request->getPathParamByName('account_info_id');
+        $accountId = $this->request->getPathParamByName(Constants::ACCOUNT);
         if ($this->userInfo->validatePermissions($userCorpoPermission, $accountId) === FALSE &&
                 $this->userInfo->validatePermissions($userGroupPermission, $accountId) === FALSE &&
                 $this->userInfo->validatePermissions($userAgencyPermission, $accountId) === FALSE) {
-            $this->securityLog('user_unauthorized');
-            $this->response->setResponseStatus(403)
+            $this->securityLog(Constants::UNAUTHORIZED_STR);
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
 
         $accountInfo = $this->bootstrap->getEntityManager()
-                ->find('com\novaconcept\entity\AccountInfo', $accountId);
+                ->find(Constants::ACCOUNT_INFO_REP, $accountId);
         $departmentInfo = $this->bootstrap->getEntityManager()
-                ->find('com\novaconcept\entity\DepartmentInfo', $this->request->getPathParamByName('id'));
+                ->find(Constants::DEPARTMENT_INFO_REP, $this->request->getPathParamByName(Constants::ID));
         if ($departmentInfo == NULL) {
-            $this->securityLog('department_not_found');
-            $this->response->setResponseStatus(404)
+            $this->securityLog(Constants::NOT_FOUND_STR);
+            $this->response->setResponseStatus(Constants::NOT_FOUND)
                     ->build();
             return;
         }
 
         if (($this->userInfo->validatePermissions($userAgencyPermission, $accountId) === TRUE &&
-                ($departmentInfo->getDescription() == "IS_CORPO" ||
-                $departmentInfo->getDescription() == "IS_GROUP")) ||
+                ($departmentInfo->getDescription() == Constants::DESC_CORPO ||
+                $departmentInfo->getDescription() == Constants::DESC_GROUP)) ||
                 ($this->userInfo->validatePermissions($userGroupPermission, $accountId) === TRUE &&
-                $departmentInfo->getDescription() == "IS_CORPO")) {
-            $this->securityLog('user_unauthorized');
-            $this->response->setResponseStatus(403)
+                $departmentInfo->getDescription() == Constants::DESC_CORPO)) {
+            $this->securityLog(Constants::UNAUTHORIZED_STR);
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
 
         if ($this->userInfo->validatePermissions($userAgencyPermission, $accountId) === TRUE &&
                 ($departmentInfo != $this->userInfo->getDepartmentInfoCollection()->first())) {
-            $this->securityLog('user_unauthorized');
-            $this->response->setResponseStatus(403)
+            $this->securityLog(Constants::UNAUTHORIZED_STR);
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
 
         if ($this->userInfo->validatePermissions($userGroupPermission, $accountId) === TRUE &&
-                (($departmentInfo->getDescription() == "IS_GROUP" &&
+                (($departmentInfo->getDescription() == Constants::DESC_CORPO &&
                 $departmentInfo != $this->userInfo->getDepartmentInfoCollection()->first()->getParent()) ||
-                ($departmentInfo->getDescription() == "IS_AGENCY" &&
+                ($departmentInfo->getDescription() == Constants::DESC_AGENCY &&
                 $departmentInfo->getParent() != $this->userInfo->getDepartmentInfoCollection()->first()->getParent()))) {
-            $this->securityLog('user_unauthorized');
-            $this->response->setResponseStatus(403)
+            $this->securityLog(Constants::UNAUTHORIZED_STR);
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
 
         if ($this->userInfo->validatePermissions($userCorpoPermission, $accountId) === TRUE &&
-                (($departmentInfo->getDescription() == "IS_CORPO" &&
+                (($departmentInfo->getDescription() == Constants::DESC_CORPO &&
                 $departmentInfo != $this->userInfo->getDepartmentInfoCollection()->first()->getParent()->getParent()) ||
-                ($departmentInfo->getDescription() == "IS_GROUP" &&
+                ($departmentInfo->getDescription() == Constants::DESC_GROUP &&
                 $departmentInfo->getParent() != $this->userInfo->getDepartmentInfoCollection()->first()->getParent()->getParent()) ||
-                ($departmentInfo->getDescription() == "IS_AGENCY" &&
+                ($departmentInfo->getDescription() == Constants::DESC_AGENCY &&
                 $departmentInfo->getParent()->getParent() != $this->userInfo->getDepartmentInfoCollection()->first()->getParent()->getParent()))) {
-            $this->securityLog('user_unauthorized');
-            $this->response->setResponseStatus(403)
+            $this->securityLog(Constants::UNAUTHORIZED_STR);
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
@@ -172,21 +173,21 @@ class DepartmentInfoService extends AbstractCoreService {
 
         if (isset($this->request->getPostData()->parent)) {
             $parent = $this->bootstrap->getEntityManager()
-                    ->find('com\novaconcept\entity\DepartmentInfo', $this->request->getPostData()->parent);
+                    ->find(Constants::DEPARTMENT_INFO_REP, $this->request->getPostData()->parent);
             if ($parent == NULL) {
-                $this->securityLog('parent_department_not_found');
-                $this->response->setResponseStatus(404)
+                $this->securityLog(Constants::NOT_FOUND_STR);
+                $this->response->setResponseStatus(Constants::NOT_FOUND)
                         ->build();
                 return;
             }
             if ($parent->getAccountInfo() !== $accountInfo) {
-                $this->securityEvent('cross_account');
-                $this->response->setResponseStatus(403)
+                $this->securityEvent(Constants::UNAUTHORIZED_STR);
+                $this->response->setResponseStatus(Constants::FORBIDDEN)
                         ->build();
                 return;
             }
             $result = $this->bootstrap->getEntityManager()
-                    ->getRepository('com\novaconcept\entity\DepartmentInfo')
+                    ->getRepository(Constants::DEPARTMENT_INFO_REP)
                     ->createQueryBuilder('u')
                     ->where('u.accountInfo = :accountInfo')
                     ->andWhere('u.name = :name')
@@ -200,7 +201,7 @@ class DepartmentInfoService extends AbstractCoreService {
                     ->getOneOrNullResult();
         } else {
             $result = $this->bootstrap->getEntityManager()
-                    ->getRepository('com\novaconcept\entity\DepartmentInfo')
+                    ->getRepository(Constants::DEPARTMENT_INFO_REP)
                     ->createQueryBuilder('u')
                     ->where('u.accountInfo = :accountInfo')
                     ->andWhere('u.name = :name')
@@ -213,8 +214,8 @@ class DepartmentInfoService extends AbstractCoreService {
                     ->getOneOrNullResult();
         }
         if ($result !== NULL) {
-            $this->securityLog('department_already_exists');
-            $this->response->setResponseStatus(409)
+            $this->securityLog(Constants::CONFLICT_STR);
+            $this->response->setResponseStatus(Constants::CONFLICT)
                     ->build();
             return;
         }
@@ -231,29 +232,29 @@ class DepartmentInfoService extends AbstractCoreService {
         $departmentInfo->mergePostData($this->request->getPostData());
         $this->bootstrap->getEntityManager()->flush();
 
-        $this->securityLog(200);
-        $this->response->setResponseStatus(200)
+        $this->securityLog(Constants::OK);
+        $this->response->setResponseStatus(Constants::OK)
                 ->build();
     }
 
     public function getByAccountInfoIdAgency() {
         $clientPermission = new Permission();
-        $clientPermission->addRequired('can_manage_departments');
+        $clientPermission->addRequired(Constants::GOD);
         $userCorpoPermission = new Permission();
-        $userCorpoPermission->addRequired('is_corpo_admin');
+        $userCorpoPermission->addRequired(Constants::CORPO);
         $userGroupPermission = new Permission();
-        $userGroupPermission->addRequired('is_group_admin');
+        $userGroupPermission->addRequired(Constants::GROUP);
         $userAgencyPermission = new Permission();
-        $userAgencyPermission->addRequired('is_agency_admin');
+        $userAgencyPermission->addRequired(Constants::AGENCY);
 
         $data = [];
 
-        $accountId = $this->request->getPathParamByName('account_info_id');
+        $accountId = $this->request->getPathParamByName(Constants::ACCOUNT);
         if ($this->userInfo->validatePermissions($userCorpoPermission, $accountId) === TRUE) {
             $corpoDepartment = $this->userInfo->getDepartmentInfoCollection()->first()->getParent()->getParent();
             foreach ($corpoDepartment->getChildrenCollection() as $groupDepartment) {
                 foreach ($groupDepartment->getChildrenCollection() as $agencyDepartment) {
-                    if ($agencyDepartment->getDescription() == "IS_AGENCY") {
+                    if ($agencyDepartment->getDescription() == Constants::DESC_AGENCY) {
                         $agency = [];
                         $agency['id'] = $agencyDepartment->getId();
                         $agency['name'] = $agencyDepartment->getName();
@@ -266,7 +267,7 @@ class DepartmentInfoService extends AbstractCoreService {
         if ($this->userInfo->validatePermissions($userGroupPermission, $accountId) === TRUE) {
             $groupDepartment = $this->userInfo->getDepartmentInfoCollection()->first()->getParent();
             foreach ($groupDepartment->getChildrenCollection() as $agencyDepartment) {
-                if ($agencyDepartment->getDescription() == "IS_AGENCY") {
+                if ($agencyDepartment->getDescription() == Constants::DESC_AGENCY) {
                     $agency = [];
                     $agency['id'] = $agencyDepartment->getId();
                     $agency['name'] = $agencyDepartment->getName();
@@ -277,7 +278,7 @@ class DepartmentInfoService extends AbstractCoreService {
         }
         if ($this->userInfo->validatePermissions($userAgencyPermission, $accountId) === TRUE) {
             $agencyDepartment = $this->userInfo->getDepartmentInfoCollection()->first();
-            if ($agencyDepartment->getDescription() == "IS_AGENCY") {
+            if ($agencyDepartment->getDescription() == Constants::DESC_AGENCY) {
                 $agency = [];
                 $agency['id'] = $agencyDepartment->getId();
                 $agency['name'] = $agencyDepartment->getName();
@@ -286,22 +287,22 @@ class DepartmentInfoService extends AbstractCoreService {
             }
         }
 
-        $this->securityLog(200);
-        $this->response->setResponseStatus(200)
+        $this->securityLog(Constants::OK);
+        $this->response->setResponseStatus(Constants::OK)
                 ->setResponseData($data)
                 ->build();
     }
 
     public function corpo() {
         $clientPermission = new Permission();
-        $clientPermission->addRequired('can_manage_departments');
+        $clientPermission->addRequired(Constants::GOD);
         $userCorpoPermission = new Permission();
-        $userCorpoPermission->addRequired('is_corpo_admin');
+        $userCorpoPermission->addRequired(Constants::CORPO);
 
-        $accountId = $this->request->getPathParamByName('account_info_id');
+        $accountId = $this->request->getPathParamByName(Constants::ACCOUNT);
         if ($this->userInfo->validatePermissions($userCorpoPermission, $accountId) === FALSE) {
-            $this->securityLog('user_unauthorized');
-            $this->response->setResponseStatus(403)
+            $this->securityLog(Constants::UNAUTHORIZED_STR);
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
@@ -311,30 +312,30 @@ class DepartmentInfoService extends AbstractCoreService {
         $data['corpo'] = $corpoDepartment->getData();
         $data['groups'] = [];
         foreach ($corpoDepartment->getChildrenCollection() as $groupDepartment) {
-            if ($groupDepartment->getDescription() == "IS_GROUP") {
+            if ($groupDepartment->getDescription() == Constants::DESC_GROUP) {
                 array_push($data['groups'], $groupDepartment->getData());
             }
         }
 
-        $this->securityLog(200);
-        $this->response->setResponseStatus(200)
+        $this->securityLog(Constants::OK);
+        $this->response->setResponseStatus(Constants::OK)
                 ->setResponseData($data)
                 ->build();
     }
 
     public function group() {
         $clientPermission = new Permission();
-        $clientPermission->addRequired('can_manage_departments');
+        $clientPermission->addRequired(Constants::GOD);
         $userCorpoPermission = new Permission();
-        $userCorpoPermission->addRequired('is_corpo_admin');
+        $userCorpoPermission->addRequired(Constants::CORPO);
         $userGroupPermission = new Permission();
-        $userGroupPermission->addRequired('is_group_admin');
+        $userGroupPermission->addRequired(Constants::GROUP);
 
-        $accountId = $this->request->getPathParamByName('account_info_id');
+        $accountId = $this->request->getPathParamByName(Constants::ACCOUNT);
         if ($this->userInfo->validatePermissions($userCorpoPermission, $accountId) === FALSE &&
                 $this->userInfo->validatePermissions($userGroupPermission, $accountId) === FALSE) {
-            $this->securityLog('user_unauthorized');
-            $this->response->setResponseStatus(403)
+            $this->securityLog(Constants::UNAUTHORIZED_STR);
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
@@ -342,16 +343,16 @@ class DepartmentInfoService extends AbstractCoreService {
         $data = [];
 
         $groupDepartment = $this->bootstrap->getEntityManager()
-                ->find('com\novaconcept\entity\DepartmentInfo', $this->request->getPathParamByName('id'));
+                ->find(Constants::DEPARTMENT_INFO_REP, $this->request->getPathParamByName(Constants::ID));
         if ($groupDepartment == NULL) {
-            $this->securityLog('group_not_found');
-            $this->response->setResponseStatus(404)
+            $this->securityLog(Constants::NOT_FOUND_STR);
+            $this->response->setResponseStatus(Constants::NOT_FOUND)
                     ->build();
             return;
         }
         if ($this->userInfo->getDepartmentInfoCollection()->first()->getParent()->getParent() != $groupDepartment->getParent()) {
-            $this->securityLog('user_unauthorized');
-            $this->response->setResponseStatus(403)
+            $this->securityLog(Constants::UNAUTHORIZED_STR);
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
@@ -359,48 +360,48 @@ class DepartmentInfoService extends AbstractCoreService {
         $data['group'] = $groupDepartment->getData();
         $data['agency'] = [];
         foreach ($groupDepartment->getChildrenCollection() as $agencyDepartment) {
-            if ($agencyDepartment->getDescription() == "IS_AGENCY") {
+            if ($agencyDepartment->getDescription() == Constants::DESC_AGENCY) {
                 array_push($data['agency'], $agencyDepartment->getData(array('parent')));
             }
         }
 
-        $this->securityLog(200);
-        $this->response->setResponseStatus(200)
+        $this->securityLog(Constants::OK);
+        $this->response->setResponseStatus(Constants::OK)
                 ->setResponseData($data)
                 ->build();
     }
 
     public function agency() {
         $clientPermission = new Permission();
-        $clientPermission->addRequired('can_manage_departments');
+        $clientPermission->addRequired(Constants::GOD);
         $userCorpoPermission = new Permission();
-        $userCorpoPermission->addRequired('is_corpo_admin');
+        $userCorpoPermission->addRequired(Constants::CORPO);
         $userGroupPermission = new Permission();
-        $userGroupPermission->addRequired('is_group_admin');
+        $userGroupPermission->addRequired(Constants::GROUP);
         $userAgencyPermission = new Permission();
-        $userAgencyPermission->addRequired('is_agency_admin');
+        $userAgencyPermission->addRequired(Constants::AGENCY);
 
-        $accountId = $this->request->getPathParamByName('account_info_id');
+        $accountId = $this->request->getPathParamByName(Constants::ACCOUNT);
         if ($this->userInfo->validatePermissions($userCorpoPermission, $accountId) === FALSE &&
                 $this->userInfo->validatePermissions($userGroupPermission, $accountId) === FALSE &&
                 $this->userInfo->validatePermissions($userAgencyPermission, $accountId) === FALSE) {
-            $this->securityLog('user_unauthorized');
-            $this->response->setResponseStatus(403)
+            $this->securityLog(Constants::UNAUTHORIZED_STR);
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
 
         $agencyDepartment = $this->bootstrap->getEntityManager()
-                ->find('com\novaconcept\entity\DepartmentInfo', $this->request->getPathParamByName('id'));
+                ->find(Constants::DEPARTMENT_INFO_REP, $this->request->getPathParamByName(Constants::ID));
         if ($agencyDepartment == NULL) {
-            $this->securityLog('group_not_found');
-            $this->response->setResponseStatus(404)
+            $this->securityLog(Constants::NOT_FOUND_STR);
+            $this->response->setResponseStatus(Constants::NOT_FOUND)
                     ->build();
             return;
         }
         if ($this->userInfo->getDepartmentInfoCollection()->first()->getParent()->getParent() != $agencyDepartment->getParent()->getParent()) {
-            $this->securityLog('user_unauthorized');
-            $this->response->setResponseStatus(403)
+            $this->securityLog(Constants::UNAUTHORIZED_STR);
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
@@ -414,30 +415,30 @@ class DepartmentInfoService extends AbstractCoreService {
             array_push($data['users'], $user->getDataArray());
         }
 
-        $this->securityLog(200);
-        $this->response->setResponseStatus(200)
+        $this->securityLog(Constants::OK);
+        $this->response->setResponseStatus(Constants::OK)
                 ->setResponseData($data)
                 ->build();
     }
 
     public function getAllUsers() {
         $clientPermission = new Permission();
-        $clientPermission->addRequired('can_manage_departments');
+        $clientPermission->addRequired(Constants::GOD);
         $userCorpoPermission = new Permission();
-        $userCorpoPermission->addRequired('is_corpo_admin');
+        $userCorpoPermission->addRequired(Constants::CORPO);
         $userGroupPermission = new Permission();
-        $userGroupPermission->addRequired('is_group_admin');
+        $userGroupPermission->addRequired(Constants::GROUP);
         $userAgencyPermission = new Permission();
-        $userAgencyPermission->addRequired('is_agency_admin');
+        $userAgencyPermission->addRequired(Constants::AGENCY);
 
         $data = [];
 
-        $accountId = $this->request->getPathParamByName('account_info_id');
+        $accountId = $this->request->getPathParamByName(Constants::ACCOUNT);
         if ($this->userInfo->validatePermissions($userCorpoPermission, $accountId) === TRUE) {
             $corpoDepartment = $this->userInfo->getDepartmentInfoCollection()->first()->getParent()->getParent();
             foreach ($corpoDepartment->getChildrenCollection() as $groupDepartment) {
                 foreach ($groupDepartment->getChildrenCollection() as $agencyDepartment) {
-                    if ($agencyDepartment->getDescription() == "IS_AGENCY") {
+                    if ($agencyDepartment->getDescription() == Constants::DESC_AGENCY) {
                         foreach ($agencyDepartment->getUserInfoCollection() as $user) {
                             $userArray = [];
                             $userArray[] = $user->getId();
@@ -456,7 +457,7 @@ class DepartmentInfoService extends AbstractCoreService {
         if ($this->userInfo->validatePermissions($userGroupPermission, $accountId) === TRUE) {
             $groupDepartment = $this->userInfo->getDepartmentInfoCollection()->first()->getParent();
             foreach ($groupDepartment->getChildrenCollection() as $agencyDepartment) {
-                if ($agencyDepartment->getDescription() == "IS_AGENCY") {
+                if ($agencyDepartment->getDescription() == Constants::DESC_AGENCY) {
                     foreach ($agencyDepartment->getUserInfoCollection() as $user) {
                         $userArray = [];
                         $userArray[] = $user->getId();
@@ -473,7 +474,7 @@ class DepartmentInfoService extends AbstractCoreService {
         }
         if ($this->userInfo->validatePermissions($userAgencyPermission, $accountId) === TRUE) {
             $agencyDepartment = $this->userInfo->getDepartmentInfoCollection()->first();
-            if ($agencyDepartment->getDescription() == "IS_AGENCY") {
+            if ($agencyDepartment->getDescription() == Constants::DESC_AGENCY) {
                 foreach ($agencyDepartment->getUserInfoCollection() as $user) {
                     $userArray = [];
                     $userArray[] = $user->getId();
@@ -488,25 +489,25 @@ class DepartmentInfoService extends AbstractCoreService {
             }
         }
 
-        $this->securityLog(200);
-        $this->response->setResponseStatus(200)
+        $this->securityLog(Constants::OK);
+        $this->response->setResponseStatus(Constants::OK)
                 ->setResponseData($data)
                 ->build();
     }
 
     public function getAllAgencies() {
         $clientPermission = new Permission();
-        $clientPermission->addRequired('can_manage_departments');
+        $clientPermission->addRequired(Constants::GOD);
         $userCorpoPermission = new Permission();
-        $userCorpoPermission->addRequired('is_corpo_admin');
+        $userCorpoPermission->addRequired(Constants::CORPO);
         $userGroupPermission = new Permission();
-        $userGroupPermission->addRequired('is_group_admin');
+        $userGroupPermission->addRequired(Constants::GROUP);
 
-        $accountId = $this->request->getPathParamByName('account_info_id');
+        $accountId = $this->request->getPathParamByName(Constants::ACCOUNT);
         if ($this->userInfo->validatePermissions($userCorpoPermission, $accountId) === FALSE &&
                 $this->userInfo->validatePermissions($userGroupPermission, $accountId) === FALSE) {
-            $this->securityLog('user_unauthorized');
-            $this->response->setResponseStatus(403)
+            $this->securityLog(Constants::UNAUTHORIZED_STR);
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
@@ -516,7 +517,7 @@ class DepartmentInfoService extends AbstractCoreService {
             $corpoDepartment = $this->userInfo->getDepartmentInfoCollection()->first()->getParent()->getParent();
             foreach ($corpoDepartment->getChildrenCollection() as $groupDepartment) {
                 foreach ($groupDepartment->getChildrenCollection() as $agencyDepartment) {
-                    if ($agencyDepartment->getDescription() == "IS_AGENCY") {
+                    if ($agencyDepartment->getDescription() == Constants::DESC_AGENCY) {
                         array_push($data, $agencyDepartment->getData());
                     }
                 }
@@ -525,14 +526,14 @@ class DepartmentInfoService extends AbstractCoreService {
         if ($this->userInfo->validatePermissions($userGroupPermission, $accountId) === TRUE) {
             $groupDepartment = $this->userInfo->getDepartmentInfoCollection()->first()->getParent()->getParent();
             foreach ($groupDepartment->getChildrenCollection() as $agencyDepartment) {
-                if ($agencyDepartment->getDescription() == "IS_AGENCY") {
+                if ($agencyDepartment->getDescription() == Constants::DESC_AGENCY) {
                     array_push($data, $agencyDepartment->getData());
                 }
             }
         }
 
-        $this->securityLog(200);
-        $this->response->setResponseStatus(200)
+        $this->securityLog(Constants::OK);
+        $this->response->setResponseStatus(Constants::OK)
                 ->setResponseData($data)
                 ->build();
     }

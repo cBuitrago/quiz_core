@@ -8,26 +8,27 @@ use com\novaconcept\entity\UserAccount;
 use com\novaconcept\entity\UserAuthentication;
 use com\novaconcept\entity\UserAuthorization;
 use com\novaconcept\entity\UserInfo;
+use com\novaconcept\utility\Constants;
 use stdClass;
 
 class UserInfoService extends AbstractCoreService {
 
     public function add() {
         $clientPermission = new Permission();
-        $clientPermission->addRequired('can_manage_users');
+        $clientPermission->addRequired(Constants::GOD);
         $userCorpoPermission = new Permission();
-        $userCorpoPermission->addRequired('is_corpo_admin');
+        $userCorpoPermission->addRequired(Constants::CORPO);
         $userGroupPermission = new Permission();
-        $userGroupPermission->addRequired('is_group_admin');
+        $userGroupPermission->addRequired(Constants::GROUP);
         $userAgencyPermission = new Permission();
-        $userAgencyPermission->addRequired('is_agency_admin');
+        $userAgencyPermission->addRequired(Constants::AGENCY);
 
-        $accountId = $this->request->getPathParamByName('account_info_id');
+        $accountId = $this->request->getPathParamByName(Constants::ACCOUNT);
         if ($this->userInfo->validatePermissions($userCorpoPermission, $accountId) === FALSE &&
                 $this->userInfo->validatePermissions($userGroupPermission, $accountId) === FALSE &&
                 $this->userInfo->validatePermissions($userAgencyPermission, $accountId) === FALSE) {
-            $this->securityLog('user_unauthorized');
-            $this->response->setResponseStatus(403)
+            $this->securityLog(Constants::UNAUTHORIZED_STR);
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
@@ -35,9 +36,9 @@ class UserInfoService extends AbstractCoreService {
         $this->request->getPostData()->username = trim($this->request->getPostData()->username);
         $this->request->getPostData()->password = trim($this->request->getPostData()->password);
         $accountInfo = $this->bootstrap->getEntityManager()
-                ->find('com\novaconcept\entity\AccountInfo', $accountId);
+                ->find(Constants::ACCOUNT_INFO_REP, $accountId);
         $result = $this->bootstrap->getEntityManager()
-                ->getRepository('com\novaconcept\entity\UserInfo')
+                ->getRepository(Constants::USER_INFO_REP)
                 ->createQueryBuilder('u')
                 ->where('u.username = :username')
                 ->setParameter("username", $this->request->getPostData()->username)
@@ -45,8 +46,8 @@ class UserInfoService extends AbstractCoreService {
                 ->getOneOrNullResult();
 
         if ($result != NULL) {
-            $this->securityLog('user_already_exists');
-            $this->response->setResponseStatus(409)
+            $this->securityLog(Constants::CONFLICT_STR);
+            $this->response->setResponseStatus(Constants::CONFLICT)
                     ->build();
             return;
         }
@@ -70,7 +71,7 @@ class UserInfoService extends AbstractCoreService {
         $this->bootstrap->getEntityManager()->flush();
 
         $userPermission = $this->bootstrap->getEntityManager()
-                ->find('com\novaconcept\entity\UserPermission', 17);
+                ->find(Constants::USER_PERMISSION_REP, Constants::USER_PERMISSION_ID);
         $userAuthorization = new UserAuthorization();
         $userAuthorization->setAccountInfo($accountInfo)
                 ->setUserInfo($userInfo)
@@ -87,59 +88,59 @@ class UserInfoService extends AbstractCoreService {
         $data = new stdClass();
         $data->id = $userInfo->getId();
 
-        $this->securityLog(201);
-        $this->response->setResponseStatus(201)
+        $this->securityLog(Constants::CREATED);
+        $this->response->setResponseStatus(Constants::CREATED)
                 ->setResponseData($data)
                 ->build();
     }
 
     public function edit() {
         $clientPermission = new Permission();
-        $clientPermission->addRequired('can_manage_users');
+        $clientPermission->addRequired(Constants::GOD);
         $userCorpoPermission = new Permission();
-        $userCorpoPermission->addRequired('is_corpo_admin');
+        $userCorpoPermission->addRequired(Constants::CORPO);
         $userGroupPermission = new Permission();
-        $userGroupPermission->addRequired('is_group_admin');
+        $userGroupPermission->addRequired(Constants::GROUP);
         $userAgencyPermission = new Permission();
-        $userAgencyPermission->addRequired('is_agency_admin');
+        $userAgencyPermission->addRequired(Constants::AGENCY);
 
-        $accountId = $this->request->getPathParamByName('account_info_id');
+        $accountId = $this->request->getPathParamByName(Constants::ACCOUNT);
         if ($this->userInfo->validatePermissions($userCorpoPermission, $accountId) === FALSE &&
                 $this->userInfo->validatePermissions($userGroupPermission, $accountId) === FALSE &&
                 $this->userInfo->validatePermissions($userAgencyPermission, $accountId) === FALSE) {
-            $this->securityLog('user_unauthorized');
-            $this->response->setResponseStatus(403)
+            $this->securityLog(Constants::UNAUTHORIZED_STR);
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
         $accountInfo = $this->bootstrap->getEntityManager()
-                ->find('com\novaconcept\entity\AccountInfo', $accountId);
+                ->find(Constants::ACCOUNT_INFO_REP, $accountId);
 
         $userInfo = $this->bootstrap->getEntityManager()
-                ->find('com\novaconcept\entity\UserInfo', $this->request->getPathParamByName('id'));
+                ->find(Constants::USER_INFO_REP, $this->request->getPathParamByName(Constants::ID));
         if ($userInfo == NULL) {
-            $this->securityLog('user_not_found');
-            $this->response->setResponseStatus(404)
+            $this->securityLog(Constants::NOT_FOUND_STR);
+            $this->response->setResponseStatus(Constants::NOT_FOUND)
                     ->build();
             return;
         }
 
         if ($userInfo->validateAccount($accountInfo) === FALSE) {
-            $this->securityEvent('cross_account');
-            $this->response->setResponseStatus(403)
+            $this->securityEvent(Constants::UNAUTHORIZED_STR);
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
 
         $userPermission = new Permission();
-        $userPermission->addRequired('is_user');
+        $userPermission->addRequired(Constants::USER);
         if (($this->userInfo->validatePermissions($userGroupPermission, $accountId) === TRUE &&
                 ($userInfo->validatePermissions($userGroupPermission, $accountId) === TRUE ||
                 $userInfo->validatePermissions($userCorpoPermission, $accountId) === TRUE)) ||
                 ($this->userInfo->validatePermissions($userAgencyPermission, $accountId) === TRUE &&
                 $userInfo->validatePermissions($userPermission, $accountId) === FALSE)) {
-            $this->securityLog('user_unauthorized');
-            $this->response->setResponseStatus(403)
+            $this->securityLog(Constants::UNAUTHORIZED_STR);
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
@@ -148,8 +149,8 @@ class UserInfoService extends AbstractCoreService {
             $corpoUserInfo = $userInfo->getDepartmentInfoCollection()->first()->getParent()->getParent();
             $corpoUserInfoSelf = $this->userInfo->getDepartmentInfoCollection()->first()->getParent()->getParent();
             if ($corpoUserInfo != $corpoUserInfoSelf) {
-                $this->securityLog('unauthorized');
-                $this->response->setResponseStatus(403)
+                $this->securityLog(Constants::UNAUTHORIZED_STR);
+                $this->response->setResponseStatus(Constants::FORBIDDEN)
                         ->build();
                 return;
             }
@@ -159,8 +160,8 @@ class UserInfoService extends AbstractCoreService {
             $groupUserInfo = $userInfo->getDepartmentInfoCollection()->first()->getParent();
             $groupUserInfoSelf = $this->userInfo->getDepartmentInfoCollection()->first()->getParent();
             if ($groupUserInfo != $groupUserInfoSelf) {
-                $this->securityLog('unauthorized');
-                $this->response->setResponseStatus(403)
+                $this->securityLog(Constants::UNAUTHORIZED_STR);
+                $this->response->setResponseStatus(Constants::FORBIDDEN)
                         ->build();
                 return;
             }
@@ -170,8 +171,8 @@ class UserInfoService extends AbstractCoreService {
             $agencyUserInfo = $userInfo->getDepartmentInfoCollection()->first();
             $agencyUserInfoSelf = $this->userInfo->getDepartmentInfoCollection()->first();
             if ($agencyUserInfo != $agencyUserInfoSelf) {
-                $this->securityLog('unauthorized');
-                $this->response->setResponseStatus(403)
+                $this->securityLog(Constants::UNAUTHORIZED_STR);
+                $this->response->setResponseStatus(Constants::FORBIDDEN)
                         ->build();
                 return;
             }
@@ -180,15 +181,15 @@ class UserInfoService extends AbstractCoreService {
         $postData = $this->request->getPostData();
         if (empty($postData->username) === FALSE) {
             $userInfoConflict = $this->bootstrap->getEntityManager()
-                    ->getRepository('com\novaconcept\entity\UserInfo')
+                    ->getRepository(Constants::USER_INFO_REP)
                     ->createQueryBuilder('u')
                     ->where('u.username = :username')
                     ->setParameter("username", $postData->username)
                     ->getQuery()
                     ->getOneOrNullResult();
             if ($userInfoConflict != NULL && $userInfoConflict->getId() != $userInfo->getId()) {
-                $this->securityLog('user_already_exists');
-                $this->response->setResponseStatus(409)
+                $this->securityLog(Constants::CONFLICT_STR);
+                $this->response->setResponseStatus(Constants::CONFLICT)
                         ->build();
                 return;
             }
@@ -201,63 +202,63 @@ class UserInfoService extends AbstractCoreService {
 
         $this->bootstrap->getEntityManager()->flush();
 
-        $this->securityLog(200);
-        $this->response->setResponseStatus(200)
+        $this->securityLog(Constants::OK);
+        $this->response->setResponseStatus(Constants::OK)
                 ->setResponseData($userInfo->getData())
                 ->build();
     }
 
     public function getById() {
         $clientPermission = new Permission();
-        $clientPermission->addRequired('can_manage_users');
+        $clientPermission->addRequired(Constants::GOD);
         $userCorpoPermission = new Permission();
-        $userCorpoPermission->addRequired('is_corpo_admin');
+        $userCorpoPermission->addRequired(Constants::CORPO);
         $userGroupPermission = new Permission();
-        $userGroupPermission->addRequired('is_group_admin');
+        $userGroupPermission->addRequired(Constants::GROUP);
         $userAgencyPermission = new Permission();
-        $userAgencyPermission->addRequired('is_agency_admin');
+        $userAgencyPermission->addRequired(Constants::AGENCY);
 
-        $accountId = $this->request->getPathParamByName('account_info_id');
+        $accountId = $this->request->getPathParamByName(Constants::ACCOUNT);
         if ($this->userInfo->validatePermissions($userCorpoPermission, $accountId) === FALSE &&
                 $this->userInfo->validatePermissions($userGroupPermission, $accountId) === FALSE &&
                 $this->userInfo->validatePermissions($userAgencyPermission, $accountId) === FALSE) {
-            $this->securityLog('user_unauthorized');
-            $this->response->setResponseStatus(403)
+            $this->securityLog(Constants::UNAUTHORIZED_STR);
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
 
         $accountInfo = $this->bootstrap->getEntityManager()
-                ->find('com\novaconcept\entity\AccountInfo', $accountId);
+                ->find(Constants::ACCOUNT_INFO_REP, $accountId);
         $userInfo = $this->bootstrap->getEntityManager()
-                ->find('com\novaconcept\entity\UserInfo', $this->request->getPathParamByName('id'));
+                ->find(Constants::USER_INFO_REP, $this->request->getPathParamByName(Constants::ID));
         if ($userInfo == NULL) {
-            $this->response->setResponseStatus(404)
+            $this->response->setResponseStatus(Constants::NOT_FOUND)
                     ->build();
             return;
         }
         if ($userInfo->validateAccount($accountInfo) === FALSE) {
-            $this->securityEvent('cross_account');
-            $this->response->setResponseStatus(403)
+            $this->securityEvent(Constants::UNAUTHORIZED_STR);
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
 
         $userCorpoPermission = new Permission();
-        $userCorpoPermission->addRequired('is_corpo_admin');
+        $userCorpoPermission->addRequired(Constants::CORPO);
         $userGroupPermission = new Permission();
-        $userGroupPermission->addRequired('is_group_admin');
+        $userGroupPermission->addRequired(Constants::GROUP);
         $userAgencyPermission = new Permission();
-        $userAgencyPermission->addRequired('is_agency_admin');
+        $userAgencyPermission->addRequired(Constants::AGENCY);
         $userUserPermission = new Permission();
-        $userUserPermission->addRequired('is_user');
+        $userUserPermission->addRequired(Constants::USER);
 
         if ($this->userInfo->validatePermissions($userCorpoPermission, $accountId) === TRUE) {
             $corpoUserInfo = $userInfo->getDepartmentInfoCollection()->first()->getParent()->getParent();
             $corpoUserInfoSelf = $this->userInfo->getDepartmentInfoCollection()->first()->getParent()->getParent();
             if ($corpoUserInfo != $corpoUserInfoSelf) {
-                $this->securityLog('unauthorized');
-                $this->response->setResponseStatus(403)
+                $this->securityLog(Constants::UNAUTHORIZED_STR);
+                $this->response->setResponseStatus(Constants::FORBIDDEN)
                         ->build();
                 return;
             }
@@ -267,8 +268,8 @@ class UserInfoService extends AbstractCoreService {
             $groupUserInfo = $userInfo->getDepartmentInfoCollection()->first()->getParent();
             $groupUserInfoSelf = $this->userInfo->getDepartmentInfoCollection()->first()->getParent();
             if ($groupUserInfo != $groupUserInfoSelf) {
-                $this->securityLog('unauthorized');
-                $this->response->setResponseStatus(403)
+                $this->securityLog(Constants::UNAUTHORIZED_STR);
+                $this->response->setResponseStatus(Constants::FORBIDDEN)
                         ->build();
                 return;
             }
@@ -278,74 +279,74 @@ class UserInfoService extends AbstractCoreService {
             $agencyUserInfo = $userInfo->getDepartmentInfoCollection()->first();
             $agencyUserInfoSelf = $this->userInfo->getDepartmentInfoCollection()->first();
             if ($agencyUserInfo != $agencyUserInfoSelf) {
-                $this->securityLog('unauthorized');
-                $this->response->setResponseStatus(403)
+                $this->securityLog(Constants::UNAUTHORIZED_STR);
+                $this->response->setResponseStatus(Constants::FORBIDDEN)
                         ->build();
                 return;
             }
         }
 
         if ($this->userInfo->validatePermissions($userUserPermission, $accountId) === TRUE) {
-            $this->securityLog('unauthorized');
-            $this->response->setResponseStatus(403)
+            $this->securityLog(Constants::UNAUTHORIZED_STR);
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
 
         $includes = $this->service->validateInclude(explode(",", $this->request->getQueryParam("includes")));
 
-        $this->securityLog(200);
-        $this->response->setResponseStatus(200)
+        $this->securityLog(Constants::OK);
+        $this->response->setResponseStatus(Constants::OK)
                 ->setResponseData($userInfo->getData($includes))
                 ->build();
     }
 
     public function delete() {
         $clientPermission = new Permission();
-        $clientPermission->addRequired('can_manage_users');
+        $clientPermission->addRequired(Constants::GOD);
         $userCorpoPermission = new Permission();
-        $userCorpoPermission->addRequired('is_corpo_admin');
+        $userCorpoPermission->addRequired(Constants::CORPO);
         $userGroupPermission = new Permission();
-        $userGroupPermission->addRequired('is_group_admin');
+        $userGroupPermission->addRequired(Constants::GROUP);
         $userAgencyPermission = new Permission();
-        $userAgencyPermission->addRequired('is_agency_admin');
+        $userAgencyPermission->addRequired(Constants::AGENCY);
 
-        $accountId = $this->request->getPathParamByName('account_info_id');
+        $accountId = $this->request->getPathParamByName(Constants::ACCOUNT);
         if ($this->userInfo->validatePermissions($userCorpoPermission, $accountId) === FALSE &&
                 $this->userInfo->validatePermissions($userGroupPermission, $accountId) === FALSE &&
                 $this->userInfo->validatePermissions($userAgencyPermission, $accountId) === FALSE) {
-            $this->securityLog('user_unauthorized');
-            $this->response->setResponseStatus(403)
+            $this->securityLog(Constants::UNAUTHORIZED_STR);
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
 
         $accountInfo = $this->bootstrap->getEntityManager()
-                ->find('com\novaconcept\entity\AccountInfo', $accountId);
+                ->find(Constants::ACCOUNT_INFO_REP, $accountId);
         $userInfo = $this->bootstrap->getEntityManager()
-                ->find('com\novaconcept\entity\UserInfo', $this->request->getPathParamByName('id'));
+                ->find(Constants::USER_INFO_REP, $this->request->getPathParamByName(Constants::ID));
         if ($userInfo == NULL) {
-            $this->response->setResponseStatus(404)
+            $this->response->setResponseStatus(Constants::NOT_FOUND)
                     ->build();
             return;
         }
 
         if ($userInfo->validateAccount($accountInfo) === FALSE) {
-            $this->securityEvent('cross_account');
-            $this->response->setResponseStatus(403)
+            $this->securityEvent(Constants::UNAUTHORIZED_STR);
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
 
         $userPermission = new Permission();
-        $userPermission->addRequired('is_user');
+        $userPermission->addRequired(Constants::USER);
         if (($this->userInfo->validatePermissions($userGroupPermission, $accountId) === TRUE &&
                 ($userInfo->validatePermissions($userGroupPermission, $accountId) === TRUE ||
                 $userInfo->validatePermissions($userGroupPermission, $accountId) === TRUE)) ||
                 ($this->userInfo->validatePermissions($userAgencyPermission, $accountId) === TRUE &&
                 $userInfo->validatePermissions($userPermission, $accountId) === FALSE)) {
-            $this->securityLog('user_unauthorized');
-            $this->response->setResponseStatus(403)
+            $this->securityLog(Constants::UNAUTHORIZED_STR);
+            $this->response->setResponseStatus(Constants::FORBIDDEN)
                     ->build();
             return;
         }
@@ -354,8 +355,8 @@ class UserInfoService extends AbstractCoreService {
             $corpoUserInfo = $userInfo->getDepartmentInfoCollection()->first()->getParent()->getParent();
             $corpoUserInfoSelf = $this->userInfo->getDepartmentInfoCollection()->first()->getParent()->getParent();
             if ($corpoUserInfo != $corpoUserInfoSelf) {
-                $this->securityLog('unauthorized');
-                $this->response->setResponseStatus(403)
+                $this->securityLog(Constants::UNAUTHORIZED_STR);
+                $this->response->setResponseStatus(Constants::FORBIDDEN)
                         ->build();
                 return;
             }
@@ -365,8 +366,8 @@ class UserInfoService extends AbstractCoreService {
             $groupUserInfo = $userInfo->getDepartmentInfoCollection()->first()->getParent();
             $groupUserInfoSelf = $this->userInfo->getDepartmentInfoCollection()->first()->getParent();
             if ($groupUserInfo != $groupUserInfoSelf) {
-                $this->securityLog('unauthorized');
-                $this->response->setResponseStatus(403)
+                $this->securityLog(Constants::UNAUTHORIZED_STR);
+                $this->response->setResponseStatus(Constants::FORBIDDEN)
                         ->build();
                 return;
             }
@@ -376,8 +377,8 @@ class UserInfoService extends AbstractCoreService {
             $agencyUserInfo = $userInfo->getDepartmentInfoCollection()->first();
             $agencyUserInfoSelf = $this->userInfo->getDepartmentInfoCollection()->first();
             if ($agencyUserInfo != $agencyUserInfoSelf) {
-                $this->securityLog('unauthorized');
-                $this->response->setResponseStatus(403)
+                $this->securityLog(Constants::UNAUTHORIZED_STR);
+                $this->response->setResponseStatus(Constants::FORBIDDEN)
                         ->build();
                 return;
             }
@@ -386,8 +387,8 @@ class UserInfoService extends AbstractCoreService {
         $this->bootstrap->getEntityManager()->remove($userInfo);
         $this->bootstrap->getEntityManager()->flush();
 
-        $this->securityLog(200);
-        $this->response->setResponseStatus(200)
+        $this->securityLog(Constants::OK);
+        $this->response->setResponseStatus(Constants::OK)
                 ->build();
     }
 
@@ -399,8 +400,8 @@ class UserInfoService extends AbstractCoreService {
 
         $includes = $this->service->validateInclude(explode(",", $this->request->getQueryParam("includes")));
 
-        $this->securityLog(200);
-        $this->response->setResponseStatus(200)
+        $this->securityLog(Constants::OK);
+        $this->response->setResponseStatus(Constants::OK)
                 ->setResponseData($this->userInfo->getData($includes))
                 ->build();
     }

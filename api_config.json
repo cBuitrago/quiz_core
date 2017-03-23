@@ -29,7 +29,7 @@
         },
         "staging":
         {
-            "protocall":"http",
+            "protocall":"https",
             "host":"www.dev-novaconcept.com",
             "apiPath":"/_CFCQuiz/api/core",
             "wwwDataFolder":"/var/www",
